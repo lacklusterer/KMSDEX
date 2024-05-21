@@ -42,7 +42,7 @@ async function init() {
     console.log("starting init");
     if (poolState['token_liquidity'] === 0
             && poolState['eth_liquidity'] === 0) {
-      // Call mint twice to make sure mint can be called mutliple times prior to disable_mint
+      // Call mint twice to make sure mint can be called multiple times prior to disable_mint
       // total_supply is 10^5 which we represent as 10**5
       // Note a 10**5 off
       const total_supply = 100000;
@@ -182,7 +182,7 @@ $("#title").html(exchange_name);
 
 
 // This is a log function, provided if you want to display things to the page instead of the JavaScript console
-// Pass in a discription of what you're printing, and then the object to print
+// Pass in a description of what you're printing, and then the object to print
 function log(description, obj) {
     $("#log").html($("#log").html() + description + ": " + JSON.stringify(obj, null, 2) + "\n\n");
 }
