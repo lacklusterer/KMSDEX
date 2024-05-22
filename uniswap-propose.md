@@ -1,3 +1,5 @@
+# WARNING: WORK IN PROGRESS
+
 Uniswap is a decentralized exchange (DEX) protocol built on the Ethereum
 blockchain that facilitates automated trading of cryptocurrencies through the
 use of smart contracts. Here’s a breakdown of its key features and how you can
