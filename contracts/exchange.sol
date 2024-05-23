@@ -100,24 +100,30 @@ contract TokenExchange is Ownable {
 	// Function addLiquidity: Adds liquidity given a supply of ETH (sent to the contract as msg.value).
 	// You can change the inputs, or the scope of your function, as needed.
 	function addLiquidity() external payable {
+		// TODO: rudiment function, need improvements
 		require(msg.value > 0, "Cannot add nothing to the pool :/");
 
 		uint tokenSupply = token.balanceOf(msg.sender);
 		uint tokenAmount = (msg.value * token_reserves) / eth_reserves;
 
-		require(tokenSupply >= tokenAmount, "Not enough token");
+		require(tokenAmount <= tokenSupply, "Not enough token");
 
 		token.transferFrom(msg.sender, address(this), tokenAmount);
-		eth_reserves += msg.value;
 
-		uint newShare = (msg.value * total_shares) / eth_reserves;
-		lps[msg.sender] = newShare;
-		total_shares += newShare;
+		token_reserves += tokenAmount;
+		eth_reserves += msg.value;
+		k = eth_reserves * token_reserves;
+
+		uint newShares = (msg.value * total_shares) / eth_reserves;
+		lps[msg.sender] = newShares;
+		total_shares += newShares;
 	}
 
 	// Function removeLiquidity: Removes liquidity given the desired amount of ETH to remove.
 	// You can change the inputs, or the scope of your function, as needed.
 	function removeLiquidity(uint amountETH) public payable {
+		require(amountETH <= (eth_reserves / (total_shares / lps[msg.sender])));
+
 		uint amountToken = (amountETH * token_reserves) / eth_reserves;
 
 		token.transferFrom(address(this), msg.sender, amountToken);
