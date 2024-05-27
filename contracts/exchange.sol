@@ -91,20 +91,18 @@ contract TokenExchange is Ownable {
 		return (eth_reserves, token_reserves);
 	}
 
-	// ============================================================
-	//                    FUNCTIONS TO IMPLEMENT
-	// ============================================================
+	function ethToToken(uint _amountETH) internal view returns (uint) {
+		return (_amountETH * token_reserves) / eth_reserves;
+	}
 
 	/* ========================= Liquidity Provider Functions =========================  */
 
-	// Function addLiquidity: Adds liquidity given a supply of ETH (sent to the contract as msg.value).
-	// You can change the inputs, or the scope of your function, as needed.
 	function addLiquidity() external payable {
-		// TODO: rudiment function, need improvements
+		// NOTE: rudiment function
 		require(msg.value > 0, "Cannot add nothing to the pool :/");
 
 		uint tokenSupply = token.balanceOf(msg.sender);
-		uint tokenAmount = (msg.value * token_reserves) / eth_reserves;
+		uint tokenAmount = ethToToken(msg.value);
 
 		require(tokenAmount <= tokenSupply, "Not enough token");
 
@@ -122,17 +120,30 @@ contract TokenExchange is Ownable {
 	// Function removeLiquidity: Removes liquidity given the desired amount of ETH to remove.
 	// You can change the inputs, or the scope of your function, as needed.
 	function removeLiquidity(uint amountETH) public payable {
+		// TODO: Finish removeLiquidity
 		require(amountETH <= (eth_reserves / (total_shares / lps[msg.sender])));
 
-		uint amountToken = (amountETH * token_reserves) / eth_reserves;
+		// uint amountToken = (amountETH * token_reserves) / eth_reserves;
+		uint amountToken = ethToToken(amountETH);
 
 		token.transferFrom(address(this), msg.sender, amountToken);
+		payable(msg.sender).transfer(amountETH);
 	}
 
 	// Function removeAllLiquidity: Removes all liquidity that msg.sender is entitled to withdraw
 	// You can change the inputs, or the scope of your function, as needed.
 	function removeAllLiquidity() external payable {
-		/******* TODO: Implement this function *******/
+		// NOTE: rudiment function
+
+		uint caller_shares = lps[msg.sender];
+
+		uint ethAmount = eth_reserves * (caller_shares / total_shares);
+		uint tokenAmount = ethToToken(ethAmount);
+
+		payable(msg.sender).transfer(ethAmount);
+		token.transferFrom(address(this), msg.sender, tokenAmount);
+
+		total_shares -= caller_shares;
 	}
 
 	/***  Define additional functions for liquidity fees here as needed ***/
