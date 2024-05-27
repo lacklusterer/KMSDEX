@@ -121,13 +121,20 @@ contract TokenExchange is Ownable {
 	// You can change the inputs, or the scope of your function, as needed.
 	function removeLiquidity(uint amountETH) public payable {
 		// TODO: Finish removeLiquidity
-		require(amountETH <= (eth_reserves / (total_shares / lps[msg.sender])));
+
+		uint userShares = lps[msg.sender];
+		uint sharesRemove = (amountETH / eth_reserves) * total_shares;
+
+		require(userShares >= amountETH / eth_reserves);
 
 		// uint amountToken = (amountETH * token_reserves) / eth_reserves;
 		uint amountToken = ethToToken(amountETH);
 
 		token.transferFrom(address(this), msg.sender, amountToken);
 		payable(msg.sender).transfer(amountETH);
+
+		total_shares -= sharesRemove;
+		lps[msg.sender] -= sharesRemove;
 	}
 
 	// Function removeAllLiquidity: Removes all liquidity that msg.sender is entitled to withdraw
@@ -135,15 +142,13 @@ contract TokenExchange is Ownable {
 	function removeAllLiquidity() external payable {
 		// NOTE: rudiment function
 
-		uint caller_shares = lps[msg.sender];
-
-		uint ethAmount = eth_reserves * (caller_shares / total_shares);
+		uint ethAmount = eth_reserves * (lps[msg.sender] / total_shares);
 		uint tokenAmount = ethToToken(ethAmount);
 
 		payable(msg.sender).transfer(ethAmount);
 		token.transferFrom(address(this), msg.sender, tokenAmount);
 
-		total_shares -= caller_shares;
+		total_shares -= lps[msg.sender];
 	}
 
 	/***  Define additional functions for liquidity fees here as needed ***/
