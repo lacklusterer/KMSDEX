@@ -161,13 +161,55 @@ contract TokenExchange is Ownable {
 	// Function swapTokensForETH: Swaps your token with ETH
 	// You can change the inputs, or the scope of your function, as needed.
 	function swapTokensForETH(uint amountTokens) external payable {
-		/******* TODO: Implement this function *******/
+		require(
+			amountTokens <= token.balanceOf(msg.sender),
+			"Not enough tokens"
+		);
+
+		uint amountETH = getAmountOut(
+			amountTokens,
+			token_reserves,
+			eth_reserves
+		);
+
+		require(amountETH <= eth_reserves - 1);
+
+		token.transferFrom(msg.sender, address(this), amountTokens);
+		payable(msg.sender).transfer(amountETH);
+
+		token_reserves += amountTokens;
+		eth_reserves -= amountETH;
 	}
 
 	// Function swapETHForTokens: Swaps ETH for your tokens
 	// ETH is sent to contract as msg.value
 	// You can change the inputs, or the scope of your function, as needed.
 	function swapETHForTokens() external payable {
-		/******* TODO: Implement this function *******/
+		uint amountTokens = getAmountOut(
+			msg.value,
+			eth_reserves,
+			token_reserves
+		);
+
+		require(amountTokens <= token_reserves - 1);
+
+		token.transferFrom(address(this), msg.sender, amountTokens);
+
+		token_reserves -= amountTokens;
+		eth_reserves += msg.value;
+	}
+
+	function getAmountOut(
+		uint amountIn,
+		uint reserveIn,
+		uint reserveOut
+	) internal view returns (uint amountOut) {
+		uint amountInDeducted = (multiplier * amountIn * swap_fee_numerator) /
+			swap_fee_denominator;
+
+		uint outNumberator = reserveOut * amountInDeducted;
+		uint outDenominator = reserveIn * multiplier + amountInDeducted;
+
+		amountOut = outNumberator / outDenominator;
 	}
 }
