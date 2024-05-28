@@ -120,30 +120,38 @@ contract TokenExchange is Ownable {
 	// Function removeLiquidity: Removes liquidity given the desired amount of ETH to remove.
 	// You can change the inputs, or the scope of your function, as needed.
 	function removeLiquidity(uint amountETH) public payable {
-		// TODO: Finish removeLiquidity
-		require(amountETH <= (eth_reserves / (total_shares / lps[msg.sender])));
+		// NOTE: rudiment
 
-		// uint amountToken = (amountETH * token_reserves) / eth_reserves;
+		uint sharesRemove = (amountETH / eth_reserves) * total_shares;
+
+		require(sharesRemove < total_shares);
+		require(sharesRemove <= lps[msg.sender]);
+
 		uint amountToken = ethToToken(amountETH);
+
+		eth_reserves -= amountETH;
+		token_reserves -= amountToken;
+		k = eth_reserves * token_reserves;
 
 		token.transferFrom(address(this), msg.sender, amountToken);
 		payable(msg.sender).transfer(amountETH);
+
+		total_shares -= sharesRemove;
+		lps[msg.sender] -= sharesRemove;
 	}
 
 	// Function removeAllLiquidity: Removes all liquidity that msg.sender is entitled to withdraw
 	// You can change the inputs, or the scope of your function, as needed.
 	function removeAllLiquidity() external payable {
-		// NOTE: rudiment function
-
-		uint caller_shares = lps[msg.sender];
-
-		uint ethAmount = eth_reserves * (caller_shares / total_shares);
+		uint ethAmount = eth_reserves * (lps[msg.sender] / total_shares);
 		uint tokenAmount = ethToToken(ethAmount);
 
 		payable(msg.sender).transfer(ethAmount);
 		token.transferFrom(address(this), msg.sender, tokenAmount);
 
-		total_shares -= caller_shares;
+		total_shares -= lps[msg.sender];
+		// TODO: remove this lp instead of setting shares to 0
+		lps[msg.sender] = 0;
 	}
 
 	/***  Define additional functions for liquidity fees here as needed ***/
@@ -153,13 +161,55 @@ contract TokenExchange is Ownable {
 	// Function swapTokensForETH: Swaps your token with ETH
 	// You can change the inputs, or the scope of your function, as needed.
 	function swapTokensForETH(uint amountTokens) external payable {
-		/******* TODO: Implement this function *******/
+		require(
+			amountTokens <= token.balanceOf(msg.sender),
+			"Not enough tokens"
+		);
+
+		uint amountETH = getAmountOut(
+			amountTokens,
+			token_reserves,
+			eth_reserves
+		);
+
+		require(amountETH <= eth_reserves - 1);
+
+		token.transferFrom(msg.sender, address(this), amountTokens);
+		payable(msg.sender).transfer(amountETH);
+
+		token_reserves += amountTokens;
+		eth_reserves -= amountETH;
 	}
 
 	// Function swapETHForTokens: Swaps ETH for your tokens
 	// ETH is sent to contract as msg.value
 	// You can change the inputs, or the scope of your function, as needed.
 	function swapETHForTokens() external payable {
-		/******* TODO: Implement this function *******/
+		uint amountTokens = getAmountOut(
+			msg.value,
+			eth_reserves,
+			token_reserves
+		);
+
+		require(amountTokens <= token_reserves - 1);
+
+		token.transferFrom(address(this), msg.sender, amountTokens);
+
+		token_reserves -= amountTokens;
+		eth_reserves += msg.value;
+	}
+
+	function getAmountOut(
+		uint amountIn,
+		uint reserveIn,
+		uint reserveOut
+	) internal view returns (uint amountOut) {
+		uint amountInDeducted = (multiplier * amountIn * swap_fee_numerator) /
+			swap_fee_denominator;
+
+		uint outNumberator = reserveOut * amountInDeducted;
+		uint outDenominator = reserveIn * multiplier + amountInDeducted;
+
+		amountOut = outNumberator / outDenominator;
 	}
 }

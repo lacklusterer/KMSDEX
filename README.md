@@ -14,5 +14,3 @@ Professor Dan Boneh.
 ```sh
 npm i
 ```
-
-WHat
