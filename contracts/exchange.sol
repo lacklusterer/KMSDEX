@@ -43,8 +43,6 @@ contract TokenExchange is Ownable {
 	// amountTokens specifies the amount of tokens to transfer from the liquidity provider.
 	// Sets up the initial exchange rate for the pool by setting amount of token and amount of ETH.
 	function createPool(uint amountTokens) external payable onlyOwner {
-		// This function is already implemented for you; no changes needed.
-
 		// require pool does not yet exist:
 		require(token_reserves == 0, "Token reserves was not 0");
 		require(eth_reserves == 0, "ETH reserves was not 0.");
@@ -69,7 +67,6 @@ contract TokenExchange is Ownable {
 		lps[msg.sender] = 100;
 	}
 
-	// For use for ExtraCredit ONLY
 	// Function removeLP: removes a liquidity provider from the list.
 	// This function also removes the gap left over from simply running "delete".
 	function removeLP(uint index) private {
@@ -98,7 +95,7 @@ contract TokenExchange is Ownable {
 	/* ========================= Liquidity Provider Functions =========================  */
 
 	function addLiquidity() external payable {
-		// NOTE: rudiment function
+		// NOTE: rudiment
 		require(msg.value > 0, "Cannot add nothing to the pool :/");
 
 		uint tokenSupply = token.balanceOf(msg.sender);
@@ -118,10 +115,8 @@ contract TokenExchange is Ownable {
 	}
 
 	// Function removeLiquidity: Removes liquidity given the desired amount of ETH to remove.
-	// You can change the inputs, or the scope of your function, as needed.
 	function removeLiquidity(uint amountETH) public payable {
 		// NOTE: rudiment
-
 		uint sharesRemove = (amountETH / eth_reserves) * total_shares;
 
 		require(sharesRemove < total_shares);
@@ -150,17 +145,18 @@ contract TokenExchange is Ownable {
 		token.transferFrom(address(this), msg.sender, tokenAmount);
 
 		total_shares -= lps[msg.sender];
-		// TODO: remove this lp instead of setting shares to 0
 		lps[msg.sender] = 0;
 	}
 
-	/***  Define additional functions for liquidity fees here as needed ***/
+	/*** TODO:  Define additional functions for liquidity fees ***/
 
 	/* ========================= Swap Functions =========================  */
 
 	// Function swapTokensForETH: Swaps your token with ETH
-	// You can change the inputs, or the scope of your function, as needed.
-	function swapTokensForETH(uint amountTokens) external payable {
+	function swapTokensForETH(
+		uint amountTokens,
+		uint maxSlippage
+	) external payable {
 		require(
 			amountTokens <= token.balanceOf(msg.sender),
 			"Not enough tokens"
@@ -172,7 +168,17 @@ contract TokenExchange is Ownable {
 			eth_reserves
 		);
 
-		require(amountETH <= eth_reserves - 1);
+		require(amountETH <= eth_reserves - 1, "Not enough ETH in reserve");
+
+		require(
+			checkSlippage(
+				token_reserves,
+				eth_reserves,
+				amountTokens,
+				amountETH,
+				maxSlippage
+			)
+		);
 
 		token.transferFrom(msg.sender, address(this), amountTokens);
 		payable(msg.sender).transfer(amountETH);
@@ -182,16 +188,27 @@ contract TokenExchange is Ownable {
 	}
 
 	// Function swapETHForTokens: Swaps ETH for your tokens
-	// ETH is sent to contract as msg.value
-	// You can change the inputs, or the scope of your function, as needed.
-	function swapETHForTokens() external payable {
+	function swapETHForTokens(uint maxSlippage) external payable {
 		uint amountTokens = getAmountOut(
-			msg.value,
 			eth_reserves,
-			token_reserves
+			token_reserves,
+			msg.value
 		);
 
-		require(amountTokens <= token_reserves - 1);
+		require(
+			amountTokens <= token_reserves - 1,
+			"Not enough token in rerserve"
+		);
+
+		require(
+			checkSlippage(
+				eth_reserves,
+				token_reserves,
+				msg.value,
+				amountTokens,
+				maxSlippage
+			)
+		);
 
 		token.transferFrom(address(this), msg.sender, amountTokens);
 
@@ -199,17 +216,32 @@ contract TokenExchange is Ownable {
 		eth_reserves += msg.value;
 	}
 
+	// NOTE: For future feature to swap arbitrary tokens or coins
 	function getAmountOut(
-		uint amountIn,
-		uint reserveIn,
-		uint reserveOut
+		uint _reserveIn,
+		uint _reserveOut,
+		uint _amountIn
 	) internal view returns (uint amountOut) {
-		uint amountInDeducted = (multiplier * amountIn * swap_fee_numerator) /
+		uint amountInDeducted = (multiplier * _amountIn * swap_fee_numerator) /
 			swap_fee_denominator;
-
-		uint outNumberator = reserveOut * amountInDeducted;
-		uint outDenominator = reserveIn * multiplier + amountInDeducted;
+		uint outNumberator = _reserveOut * amountInDeducted;
+		uint outDenominator = _reserveIn * multiplier + amountInDeducted;
 
 		amountOut = outNumberator / outDenominator;
+	}
+
+	// NOTE: For future feature to swap arbitrary tokens or coins
+	function checkSlippage(
+		uint _reserveIn,
+		uint _reserveOut,
+		uint _amountIn,
+		uint _amountOut,
+		uint _maxSlippage
+	) internal view returns (bool accept) {
+		uint currentRate = (_reserveIn * multiplier) / _reserveOut;
+		uint afterTradeRate = ((_reserveIn + _amountIn) * multiplier) /
+			(_reserveOut - _amountOut);
+		uint slippage = ((afterTradeRate - currentRate) * 100) / currentRate;
+		accept = (slippage <= _maxSlippage);
 	}
 }
