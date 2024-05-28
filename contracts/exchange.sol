@@ -122,12 +122,11 @@ contract TokenExchange is Ownable {
 	function removeLiquidity(uint amountETH) public payable {
 		// NOTE: rudiment
 
-		uint userShares = lps[msg.sender];
 		uint sharesRemove = (amountETH / eth_reserves) * total_shares;
 
-		require(userShares >= amountETH / eth_reserves);
+		require(sharesRemove < total_shares);
+		require(sharesRemove <= lps[msg.sender]);
 
-		// uint amountToken = (amountETH * token_reserves) / eth_reserves;
 		uint amountToken = ethToToken(amountETH);
 
 		eth_reserves -= amountETH;
@@ -151,7 +150,8 @@ contract TokenExchange is Ownable {
 		token.transferFrom(address(this), msg.sender, tokenAmount);
 
 		total_shares -= lps[msg.sender];
-		// TODO: remove this LP
+		// TODO: remove this lp instead of setting shares to 0
+		lps[msg.sender] = 0;
 	}
 
 	/***  Define additional functions for liquidity fees here as needed ***/
