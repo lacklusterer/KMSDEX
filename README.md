@@ -15,4 +15,15 @@ Professor Dan Boneh.
 npm i
 ```
 
-WHat
+# TODO
+
+- [ ] basic implementation
+	- [x] add liquidity
+	- [x] removeLiquidity
+	- [x] removeAllLiquidity
+	- [ ] swapTokensForETH
+	- [ ] swapETHforTokens
+- [ ] implement backend with js
+- [ ] handle slippage
+- [ ] reward LPs
+- [ ] sanity check
