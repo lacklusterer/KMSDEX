@@ -88,16 +88,18 @@ contract TokenExchange is Ownable {
 		return (eth_reserves, token_reserves);
 	}
 
-	function ethToToken(uint _amountETH) internal view returns (uint) {
-		return (_amountETH * token_reserves) / eth_reserves;
-	}
-
 	/* ========================= Liquidity Provider Functions =========================  */
 
 	modifier poolExist() {
 		require(eth_reserves > 0, "No liquidity pool");
 		require(token_reserves > 0, "No liquidity pool");
 		_;
+	}
+
+	function ethToToken(
+		uint _amountETH
+	) internal view poolExist returns (uint) {
+		return _amountETH * (token_reserves / eth_reserves);
 	}
 
 	// Function addLiquidity: Adds liquidity based on ETH in msg.value
@@ -173,6 +175,7 @@ contract TokenExchange is Ownable {
 		uint amountTokens,
 		uint maxSlippage
 	) external payable poolExist {
+		require(amountTokens > 0, "Please swap more than 0 token");
 		require(
 			amountTokens <= token.balanceOf(msg.sender),
 			"Not enough tokens"
@@ -205,6 +208,8 @@ contract TokenExchange is Ownable {
 
 	// Function swapETHForTokens: Swaps ETH for your tokens
 	function swapETHForTokens(uint maxSlippage) external payable poolExist {
+		require(msg.value > 0, "Please swap more than 0 ETH");
+
 		uint amountTokens = getAmountOut(
 			eth_reserves,
 			token_reserves,
@@ -232,7 +237,7 @@ contract TokenExchange is Ownable {
 		eth_reserves += msg.value;
 	}
 
-	// NOTE: For future feature to swap arbitrary tokens or coins
+	// Function getAmountOut: for 2 reserves and 1 asset, outputs the equivalent amount to swap
 	function getAmountOut(
 		uint _reserveIn,
 		uint _reserveOut,
@@ -246,7 +251,7 @@ contract TokenExchange is Ownable {
 		amountOut = outNumberator / outDenominator;
 	}
 
-	// NOTE: For future feature to swap arbitrary tokens or coins
+	// Function checkSlippage: return a boolean: exchange rate slippage is acceptable or not
 	function checkSlippage(
 		uint _reserveIn,
 		uint _reserveOut,
