@@ -100,18 +100,18 @@ contract TokenExchange is Ownable {
 		_;
 	}
 
+	// Function addLiquidity: Adds liquidity based on ETH in msg.value
 	function addLiquidity() external payable poolExist {
 		require(msg.value > 0, "Need to ETH to add liquidity");
 
-		uint tokenSupply = token.balanceOf(msg.sender);
 		uint tokenAmount = ethToToken(msg.value);
-
-		require(tokenAmount <= tokenSupply, "Not enough token");
-		token.transferFrom(msg.sender, address(this), tokenAmount);
+		require(tokenAmount <= token.balanceOf(msg.sender), "Not enough token");
 
 		token_reserves += tokenAmount;
 		eth_reserves += msg.value;
 		k = eth_reserves * token_reserves;
+
+		token.transferFrom(msg.sender, address(this), tokenAmount);
 
 		uint newShares = (msg.value * total_shares) / eth_reserves;
 		lps[msg.sender] = newShares;
@@ -122,10 +122,19 @@ contract TokenExchange is Ownable {
 	function removeLiquidity(uint amountETH) public payable poolExist {
 		uint sharesRemove = (amountETH / eth_reserves) * total_shares;
 
-		require(sharesRemove < total_shares);
-		require(sharesRemove <= lps[msg.sender]);
+		require(sharesRemove < total_shares, "You don't own enough shares");
+		require(
+			sharesRemove <= lps[msg.sender],
+			"Removing more ETH than your shares"
+		);
 
 		uint amountToken = ethToToken(amountETH);
+
+		require(
+			amountToken < token_reserves - 1,
+			"Removing too much liquidity"
+		);
+		require(amountETH < eth_reserves - 1, "Removing too much liquidity");
 
 		eth_reserves -= amountETH;
 		token_reserves -= amountToken;
@@ -146,6 +155,10 @@ contract TokenExchange is Ownable {
 
 		payable(msg.sender).transfer(ethAmount);
 		token.transferFrom(address(this), msg.sender, tokenAmount);
+
+		eth_reserves -= ethAmount;
+		token_reserves -= tokenAmount;
+		k = ethAmount * tokenAmount;
 
 		total_shares -= lps[msg.sender];
 		lps[msg.sender] = 0;
