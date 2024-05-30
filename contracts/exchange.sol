@@ -94,15 +94,19 @@ contract TokenExchange is Ownable {
 
 	/* ========================= Liquidity Provider Functions =========================  */
 
-	function addLiquidity() external payable {
-		// NOTE: rudiment
-		require(msg.value > 0, "Cannot add nothing to the pool :/");
+	modifier poolExist() {
+		require(eth_reserves > 0, "No liquidity pool");
+		require(token_reserves > 0, "No liquidity pool");
+		_;
+	}
+
+	function addLiquidity() external payable poolExist {
+		require(msg.value > 0, "Need to ETH to add liquidity");
 
 		uint tokenSupply = token.balanceOf(msg.sender);
 		uint tokenAmount = ethToToken(msg.value);
 
 		require(tokenAmount <= tokenSupply, "Not enough token");
-
 		token.transferFrom(msg.sender, address(this), tokenAmount);
 
 		token_reserves += tokenAmount;
@@ -115,8 +119,7 @@ contract TokenExchange is Ownable {
 	}
 
 	// Function removeLiquidity: Removes liquidity given the desired amount of ETH to remove.
-	function removeLiquidity(uint amountETH) public payable {
-		// NOTE: rudiment
+	function removeLiquidity(uint amountETH) public payable poolExist {
 		uint sharesRemove = (amountETH / eth_reserves) * total_shares;
 
 		require(sharesRemove < total_shares);
@@ -137,7 +140,7 @@ contract TokenExchange is Ownable {
 
 	// Function removeAllLiquidity: Removes all liquidity that msg.sender is entitled to withdraw
 	// You can change the inputs, or the scope of your function, as needed.
-	function removeAllLiquidity() external payable {
+	function removeAllLiquidity() external payable poolExist {
 		uint ethAmount = eth_reserves * (lps[msg.sender] / total_shares);
 		uint tokenAmount = ethToToken(ethAmount);
 
@@ -156,7 +159,7 @@ contract TokenExchange is Ownable {
 	function swapTokensForETH(
 		uint amountTokens,
 		uint maxSlippage
-	) external payable {
+	) external payable poolExist {
 		require(
 			amountTokens <= token.balanceOf(msg.sender),
 			"Not enough tokens"
@@ -188,7 +191,7 @@ contract TokenExchange is Ownable {
 	}
 
 	// Function swapETHForTokens: Swaps ETH for your tokens
-	function swapETHForTokens(uint maxSlippage) external payable {
+	function swapETHForTokens(uint maxSlippage) external payable poolExist {
 		uint amountTokens = getAmountOut(
 			eth_reserves,
 			token_reserves,
