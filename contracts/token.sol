@@ -28,4 +28,8 @@ contract Token is Ownable, ERC20 {
 		require(mint_enabled, "Minting already disabled");
 		mint_enabled = false;
 	}
+
+	function enable_mint() public onlyOwner {
+		mint_enabled = true;
+	}
 }
