@@ -84,24 +84,106 @@ async function getPoolState() {
 /*** ADD LIQUIDITY ***/
 async function addLiquidity(amountEth, maxSlippagePct) {
     /** TODO: ADD YOUR CODE HERE **/
+    _maxSlippagePct = maxSlippagePct / 100
+    let accounts = await provider.listAccounts()
+    let token_balance = await token_contract.connect(provider.getSigner(accounts[0])).balanceOf(accounts[0]);
+    let eth_balance = await provider.getBalance(accounts[0]);
+    let token_amount = amountEth * poolState['token_eth_rate'];
+    // Check if the user has enough tokens and eth
+    if (token_balance < token_amount || eth_balance < amountEth) {
+        console.log("Insufficient funds");
+        return;
+    }
+    // Check if the user has approved the exchange to spend their tokens
+    let allowance = await token_contract.connect(provider.getSigner(accounts[0])).allowance(accounts[0], exchange_address);
+    if (allowance < token_amount) {
+        await token_contract.connect(provider.getSigner(accounts[0])).approve(exchange_address, token_amount);
+    }
+    // Add liquidity
+    let eth_amount = ethers.utils.parseEther(amountEth.toString());
+    let token_amount_wei = ethers.utils.parseEther(token_amount.toString());
+    let min_liquidity = 0;
+    let deadline = Math.floor(Date.now() / 1000) + 60;
+    await exchange_contract.connect(provider.getSigner(accounts[0])).addLiquidity(token_amount_wei, min_liquidity, deadline, {value: eth_amount});
+    
 }
 
 /*** REMOVE LIQUIDITY ***/
 async function removeLiquidity(amountEth, maxSlippagePct) {
     /** TODO: ADD YOUR CODE HERE **/
+    _maxSlippagePct = maxSlippagePct / 100
+    let accounts = await provider.listAccounts()
+    let eth_balance = await provider.getBalance(accounts[0]);
+    let token_balance = await token_contract.connect(provider.getSigner(accounts[0])).balanceOf(accounts[0]);
+    let eth_amount = ethers.utils.parseEther(amountEth.toString());
+    let liquidity = amountEth * poolState['eth_liquidity'];
+    let min_eth = 0;
+    let min_tokens = 0;
+    let deadline = Math.floor(Date.now() / 1000) + 60;
+    await exchange_contract.connect(provider.getSigner(accounts[0])).removeLiquidity(liquidity, min_tokens, min_eth, deadline);
+
 }
 
 async function removeAllLiquidity(maxSlippagePct) {
     /** TODO: ADD YOUR CODE HERE **/
+    _maxSlippagePct = maxSlippagePct / 100
+    let accounts = await provider.listAccounts()
+    let eth_balance = await provider.getBalance(accounts[0]);
+    let token_balance = await token_contract.connect(provider.getSigner(accounts[0])).balanceOf(accounts[0]);
+    let liquidity = poolState['eth_liquidity'];
+    let min_eth = 0;
+    let min_tokens = 0;
+    let deadline = Math.floor(Date.now() / 1000) + 60;
+    await exchange_contract.connect(provider.getSigner(accounts[0])).removeAllLiquidity(liquidity, min_tokens, min_eth, deadline);
 }
 
 /*** SWAP ***/
 async function swapTokensForETH(amountToken, maxSlippagePct) {
     /** TODO: ADD YOUR CODE HERE **/
+    _maxSlippagePct = maxSlippagePct / 100
+    let accounts = await provider.listAccounts()
+    let token_balance = await token_contract.connect(provider.getSigner(accounts[0])).balanceOf(accounts[0]);
+    let eth_balance = await provider.getBalance(accounts[0]);
+    let token_amount = amountToken;
+    let eth_amount = 0;
+    // Check if the user has enough tokens
+    if (token_balance < token_amount) {
+        console.log("Insufficient funds");
+        return;
+    }
+    // Check if the user has approved the exchange to spend their tokens
+    let allowance = await token_contract.connect(provider.getSigner(accounts[0])).allowance(accounts[0], exchange_address);
+    if (allowance < token_amount) {
+        await token_contract.connect(provider.getSigner(accounts[0])).approve(exchange_address, token_amount);
+    }
+    // Swap tokens for eth
+    let token_amount_wei = ethers.utils.parseEther(token_amount.toString());
+    let min_eth = 0;
+    let deadline = Math.floor(Date.now() / 1000) + 60;
+    let eth_received = await exchange_contract.connect(provider.getSigner(accounts[0])).swapTokensForETH(token_amount_wei, min_eth, deadline);
+    console.log("ETH received: ", eth_received);
+
 }
 
 async function swapETHForTokens(amountEth, maxSlippagePct) {
     /** TODO: ADD YOUR CODE HERE **/
+    _maxSlippagePct = maxSlippagePct / 100
+    let accounts = await provider.listAccounts()
+    let eth_balance = await provider.getBalance(accounts[0]);
+    let token_balance = await token_contract.connect(provider.getSigner(accounts[0])).balanceOf(accounts[0]);
+    let eth_amount = ethers.utils.parseEther(amountEth.toString());
+    let token_amount = 0;
+    // Check if the user has enough eth
+    if (eth_balance < eth_amount) {
+        console.log("Insufficient funds");
+        return;
+    }
+    // Swap eth for tokens
+    let min_tokens = 0;
+    let deadline = Math.floor(Date.now() / 1000) + 60;
+    let token_received = await exchange_contract.connect(provider.getSigner(accounts[0])).swapETHForTokens(min_tokens, deadline, {value: eth_amount});
+    console.log("Tokens received: ", token_received);
+
 }
 
 // =============================================================================
