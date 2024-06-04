@@ -14,8 +14,8 @@ npm i
 > Update token and exchange address in exchange smart contract and webapp
 
 ## Set these variable in your .env file:
-- OWNER_PRIVATE_KEY : private key of deployer
-- TOKEN_ADDRESS : automatically set when run deploy script
-- EXCHANGE_ADDRESS : automatically set when run deploy script
-- ABI_JSON_PATH="./artifacts/contracts/token.sol/Token.json"
+- `OWNER_PRIVATE_KEY` : private key of deployer
+- `TOKEN_ADDRESS` : automatically set when run deploy script
+- `EXCHANGE_ADDRESS` : automatically set when run deploy script
+- `ABI_JSON_PATH` : ./artifacts/contracts/token.sol/Token.json
 

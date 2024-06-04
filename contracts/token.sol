@@ -13,23 +13,20 @@ contract Token is Ownable, ERC20 {
 
 	constructor() ERC20(_name, _symbol) {}
 
-	// Function mint: Create more of your tokens.
-	// You can change the inputs, or the scope of your function, as needed.
-	// Do not remove the onlyOwner modifier!
 	function mint(uint amount) public onlyOwner {
 		require(mint_enabled, "Minting disabled");
 		_mint(msg.sender, amount);
 	}
 
-	// Function disable_mint: Disable future minting of your token.
-	// You can change the inputs, or the scope of your function, as needed.
-	// Do not remove the onlyOwner modifier!
 	function disable_mint() public onlyOwner {
 		require(mint_enabled, "Minting already disabled");
 		mint_enabled = false;
 	}
 
 	function enable_mint() public onlyOwner {
+		require(!mint_enabled, "Minting already enabled")
 		mint_enabled = true;
 	}
+
+	mapping (address=>uint256) name;
 }
