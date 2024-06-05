@@ -24,8 +24,7 @@ def get_hash(preimage, verbose):
         print(f"First 128 bits: {first_128bits}")
         print(f"Second 128 bits: {second_128bits}")
     else:
-        print(f"{first_128bits}")
-        print(f"{second_128bits}")
+        print(f"{first_128bits} {second_128bits}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process 4 128-bit numbers and compute their SHA-256 hash.")
