@@ -3,5 +3,6 @@
 /package-lock.json
 artifacts/
 cache/
-token_address.txt
-exchange_address.txt
+/zk_app/zokrates/artifacts
+/zk_app/zokrates/peggy/
+/zk_app/zokrates/victor/
