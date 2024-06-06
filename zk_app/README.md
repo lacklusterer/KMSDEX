@@ -18,10 +18,10 @@ chmod +x {filename}
 ```bash
 /bin/bash ./run.sh a b c d
 ```
+Where a, b, c, d are 128 bits numbers representing the pre-image (Example: 0 0 0 5)
 
 - If you get the error: ```$'\r': command not found```, run the following command:
 ```bash
 dos2unix {filename}
 ```
 
-Where a, b, c, d are 128 bits numbers representing the pre-image (Example: 0 0 0 5)
