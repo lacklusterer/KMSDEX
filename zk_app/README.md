@@ -2,4 +2,7 @@
 How to use Zokrates.
 
 ## How to use
-- work in progress
+- Simply go to zokrates directory and run:
+```bash
+/bin/bash ./run.sh 
+```
