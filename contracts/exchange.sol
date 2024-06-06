@@ -4,12 +4,15 @@ pragma solidity ^0.8.0;
 import "./token.sol";
 import "hardhat/console.sol";
 import "./verifier.sol";
+import "./interfaces/IVerifier.sol";
 
 contract TokenExchange is Ownable {
     string public exchange_name = "KMS EX";
 
     address tokenAddr = 0x5FbDB2315678afecb367f032d93F642f64180aa3; // WARNING: update after deploying token
     Token public token = Token(tokenAddr);
+
+	address verifierAddr = 0x5FbDB2315678afecb367f032d93F642f64180aa3; // WARNING: update after deploying verifier
 
     // Liquidity pool for the exchange
     uint private token_reserves = 0;
@@ -234,7 +237,7 @@ contract TokenExchange is Ownable {
         uint _amountIn,
         uint _amountOut,
         uint _maxSlippage
-    ) internal view returns (bool accept) {
+	) internal view returns (bool accept) {
         uint currentRate = (_reserveIn * multiplier) / _reserveOut;
         uint afterTradeRate = ((_reserveIn + _amountIn) * multiplier) /
             (_reserveOut - _amountOut);
@@ -266,26 +269,35 @@ contract TokenExchange is Ownable {
         );
 
         eth_reserves += amountETH;
-        token_reserves -= amountTokens;
-    }
+		token_reserves -= amountTokens;
+	}
 
-    /* ========================= ZK Functions =========================  */
+	/* ========================= ZK Functions =========================  */
+	// WARNING: UNTESTED
 
-    mapping(bytes32 => uint) private zkBalances;
+	mapping(bytes32 => uint) private zkBalances;
 
-    // This function is similar to the normal swap function, but does not pay tokens immediately
-    // instead, the amount of tokens is mapped to the user provided sha256 digest. Using zk-snark
-    // proof to prove the knowledge of the pre-image of the digest, the user can withdraw
-    function zkSwapETHForTokens(
-        uint amountETH,
-        uint maxSlippage,
-        bytes32 zkKey
-    ) external payable poolExist {
-        uint amountTokens = _ethIn(maxSlippage, amountETH);
-        zkBalances[zkKey] = amountTokens;
-    }
+	// This function is similar to the normal swap function, but does not pay tokens immediately
+	// instead, the amount of tokens is mapped to the user provided sha256 digest. Using zk-snark
+	// proof to prove the knowledge of the pre-image of the digest, the user can withdraw	
+	function zkSwapETHForTokens(
+		uint maxSlippage,
+		bytes32 zkKey
+	) external payable poolExist {
+		uint amountTokens = _ethIn(maxSlippage, msg.value);
+		zkBalances[zkKey] = amountTokens;
+	}
 
-    function zkWithdraw(bytes32 zkKey) external payable poolExist {
-        // TODO: Impement this function and fix verifier contract
+	IVerifier verifier = IVerifier(verifierAddr);
+
+	function zkWithdraw(
+		IVerifier.Proof memory proof,
+		uint[2] memory input,
+		bytes32 zkKey
+	) external poolExist {
+		bool verificationResult = verifier.verifyTx(proof, input);
+		require(verificationResult, "Verification failed");
+
+		token.transferFrom(address(this), msg.sender, zkBalances[zkKey]);
 	}
 }
