@@ -5,70 +5,64 @@ import "./token.sol";
 import "hardhat/console.sol";
 import "./verifier.sol";
 import "./interfaces/IVerifier.sol";
+import "./exchangehelper.sol";
 
-contract TokenExchange is Ownable {
-    string public exchange_name = "KMS EX";
-    address tokenAddr = 0x5FbDB2315678afecb367f032d93F642f64180aa3; // WARNING: update after deploying token
-    Token public token = Token(tokenAddr);
+contract TokenExchange is Ownable, ExchangeHelper {
+	string public exchange_name = "KMS EX";
+	address tokenAddr = 0x5FbDB2315678afecb367f032d93F642f64180aa3; // WARNING: update after deploying token
+	Token public token = Token(tokenAddr);
 
 	address verifierAddr = 0x5FbDB2315678afecb367f032d93F642f64180aa3; // WARNING: update after deploying verifier
 
-    // Liquidity pool for the exchange
-    uint private token_reserves = 0;
-    uint private eth_reserves = 0;
+	// Liquidity pool for the exchange
+	uint private token_reserves = 0;
+	uint private eth_reserves = 0;
 
-    // Fee Pools
-    uint private token_fee_reserves = 0;
-    uint private eth_fee_reserves = 0;
+	// Fee Pools
+	uint private token_fee_reserves = 0;
+	uint private eth_fee_reserves = 0;
 
-    // Liquidity pool shares
-    mapping(address => uint) private lps;
+	// Liquidity pool shares
+	mapping(address => uint) private lps;
+	// For Extra Credit only: to loop through the keys of the lps mapping
+	address[] private lp_providers;
 
-    // For Extra Credit only: to loop through the keys of the lps mapping
-    address[] private lp_providers;
+	// Total Pool Shares
+	uint private total_shares = 0;
 
-    // Total Pool Shares
-    uint private total_shares = 0;
+	// Constant: x * y = k
+	uint private k;
 
-    // liquidity rewards
-    uint private swap_fee_numerator = 3;
-    uint private swap_fee_denominator = 100;
+	constructor() {}
 
-    // Constant: x * y = k
-    uint private k;
+	// Function createPool: Initializes a liquidity pool between your Token and ETH.
+	// ETH will be sent to pool in this transaction as msg.value
+	// amountTokens specifies the amount of tokens to transfer from the liquidity provider.
+	// Sets up the initial exchange rate for the pool by setting amount of token and amount of ETH.
+	function createPool(uint amountTokens) external payable onlyOwner {
+		// require pool does not yet exist:
+		require(token_reserves == 0, "Token reserves was not 0");
+		require(eth_reserves == 0, "ETH reserves was not 0.");
 
-    uint private multiplier = 10 ** 5;
+		// require nonzero values were sent
+		require(msg.value > 0, "Need eth to create pool.");
+		uint tokenSupply = token.balanceOf(msg.sender);
+		require(
+			amountTokens <= tokenSupply,
+			"Not have enough tokens to create the pool"
+		);
+		require(amountTokens > 0, "Need tokens to create pool.");
 
-    constructor() {}
+		token.transferFrom(msg.sender, address(this), amountTokens);
+		token_reserves = token.balanceOf(address(this));
+		eth_reserves = msg.value;
+		k = token_reserves * eth_reserves;
 
-    // Function createPool: Initializes a liquidity pool between your Token and ETH.
-    // ETH will be sent to pool in this transaction as msg.value
-    // amountTokens specifies the amount of tokens to transfer from the liquidity provider.
-    // Sets up the initial exchange rate for the pool by setting amount of token and amount of ETH.
-    function createPool(uint amountTokens) external payable onlyOwner {
-        // require pool does not yet exist:
-        require(token_reserves == 0, "Token reserves was not 0");
-        require(eth_reserves == 0, "ETH reserves was not 0.");
-
-        // require nonzero values were sent
-        require(msg.value > 0, "Need eth to create pool.");
-        uint tokenSupply = token.balanceOf(msg.sender);
-        require(
-            amountTokens <= tokenSupply,
-            "Not have enough tokens to create the pool"
-        );
-        require(amountTokens > 0, "Need tokens to create pool.");
-
-        token.transferFrom(msg.sender, address(this), amountTokens);
-        token_reserves = token.balanceOf(address(this));
-        eth_reserves = msg.value;
-        k = token_reserves * eth_reserves;
-
-        // Pool shares set to a large value to minimize round-off errors
-        total_shares = 10 ** 5;
-        // Pool creator has some low amount of shares to allow autograder to run
-        lps[msg.sender] = 100;
-    }
+		// Pool shares set to a large value to minimize round-off errors
+		total_shares = 10 ** 5;
+		// Pool creator has some low amount of shares to allow autograder to run
+		lps[msg.sender] = 100;
+	}
 
     // Function removeLP: removes a liquidity provider from the list.
     // This function also removes the gap left over from simply running "delete".
@@ -213,35 +207,6 @@ contract TokenExchange is Ownable {
     function swapETHForTokens(uint maxSlippage) external payable poolExist {
         uint amountTokens = _ethIn(maxSlippage, msg.value);
         token.transferFrom(address(this), msg.sender, amountTokens);
-    }
-
-    // Function getAmountOut: for 2 reserves and 1 asset, outputs the equivalent amount to swap
-    function getAmountOut(
-        uint _reserveIn,
-        uint _reserveOut,
-        uint _amountIn
-    ) internal view returns (uint amountOut) {
-        uint amountInDeducted = (multiplier * _amountIn * swap_fee_numerator) /
-            swap_fee_denominator;
-        uint outNumberator = _reserveOut * amountInDeducted;
-        uint outDenominator = _reserveIn * multiplier + amountInDeducted;
-
-        amountOut = outNumberator / outDenominator;
-    }
-
-    // Function checkSlippage: return a boolean: exchange rate slippage is acceptable or not
-    function checkSlippage(
-        uint _reserveIn,
-        uint _reserveOut,
-        uint _amountIn,
-        uint _amountOut,
-        uint _maxSlippage
-	) internal view returns (bool accept) {
-        uint currentRate = (_reserveIn * multiplier) / _reserveOut;
-        uint afterTradeRate = ((_reserveIn + _amountIn) * multiplier) /
-            (_reserveOut - _amountOut);
-        uint slippage = ((afterTradeRate - currentRate) * 100) / currentRate;
-        accept = (slippage <= _maxSlippage);
     }
 
     function _ethIn(
