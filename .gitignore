@@ -3,5 +3,8 @@
 /package-lock.json
 artifacts/
 cache/
-token_address.txt
-exchange_address.txt
+zk_app/artifacts
+zk_app/peggy/
+zk_app/victor/
+zk_app/proof.json
+scripts/exe.js
