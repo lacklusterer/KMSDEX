@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/sh
 
 PROOF=./proof.json
 PROVER_DIR=./peggy
