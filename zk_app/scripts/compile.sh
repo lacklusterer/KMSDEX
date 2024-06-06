@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/sh
 
 # Define the target file and directory
 BIN="./artifacts/psh256"
