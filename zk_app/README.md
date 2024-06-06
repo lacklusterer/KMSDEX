@@ -1,7 +1,12 @@
 ![zokrates_usage](./zokrates.jpg)
-How to use Zokrates.
 
-## How to use
+## Require Zokrates to use
+
+```bash
+curl -LSfs get.zokrat.es | sh
+```
+
+## Usage
 
 - Simply run the following command to obtain proof:
 
