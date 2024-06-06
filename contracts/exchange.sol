@@ -287,5 +287,5 @@ contract TokenExchange is Ownable {
 
     function zkWithdraw(bytes32 zkKey) external payable poolExist {
         // TODO: Impement this function and fix verifier contract
-    }
+	}
 }

@@ -6,8 +6,6 @@ ART_DIR="./artifacts"
 
 # Check if the file exists
 if [ ! -f "$BIN" ]; then
-    echo "File $BIN does not exist."
-
     # Create the directory if it doesn't exist
     if [ ! -d "$ART_DIR" ]; then
         echo "Creating directory $ART_DIR"
@@ -20,5 +18,5 @@ if [ ! -f "$BIN" ]; then
 
     echo "Compilation finished."
 else
-    echo "File $BIN already exists."
+    echo "Compiled binary found"
 fi

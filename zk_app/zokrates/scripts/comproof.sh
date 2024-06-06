@@ -17,7 +17,6 @@ else
 fi
 
 if [ ! -f ../$PROOF ]; then
-  echo "Generating proof"
   zokrates generate-proof -i ../artifacts/psh256
   mv ./proof.json ../
 else

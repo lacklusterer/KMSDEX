@@ -13,6 +13,6 @@ if [ ! -f "$PROVING_KEY" ] || [ ! -f "$VERIFICATION_KEY" ]; then
 	fi
 	zokrates setup -i ./artifacts/psh256 -v $VERIFICATION_KEY -p $PROVING_KEY
 else
-	echo "Keys already exist"
+	echo "Keys found"
 fi
 

@@ -35,7 +35,6 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
 
     args = parser.parse_args()
-    print(args)
 
     try:
         if args.a < 0 or args.a > (2**128 - 1) or args.b < 0 or args.b > (2**128 - 1) or args.c < 0 or args.c > (2**128 - 1) or args.d < 0 or args.d > (2**128 - 1):
