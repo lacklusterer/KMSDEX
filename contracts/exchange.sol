@@ -273,6 +273,9 @@ contract TokenExchange is Ownable {
 
     mapping(bytes32 => uint) private zkBalances;
 
+    // This function is similar to the normal swap function, but does not pay tokens immediately
+    // instead, the amount of tokens is mapped to the user provided sha256 digest. Using zk-snark
+    // proof to prove the knowledge of the pre-image of the digest, the user can withdraw
     function zkSwapETHForTokens(
         uint amountETH,
         uint maxSlippage,
