@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/sh
 
 PROVING_KEY=./peggy/proving.key
 VERIFICATION_KEY=./victor/verification.key
