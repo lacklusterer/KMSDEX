@@ -209,33 +209,8 @@ contract TokenExchange is Ownable {
 
     // Function swapETHForTokens: Swaps ETH for your tokens
     function swapETHForTokens(uint maxSlippage) external payable poolExist {
-        require(msg.value > 0, "Please swap more than 0 ETH");
-
-        uint amountTokens = getAmountOut(
-            eth_reserves,
-            token_reserves,
-            msg.value
-        );
-
-        require(
-            amountTokens <= token_reserves - 1,
-            "Not enough token in rerserve"
-        );
-
-        require(
-            checkSlippage(
-                eth_reserves,
-                token_reserves,
-                msg.value,
-                amountTokens,
-                maxSlippage
-            )
-        );
-
+        uint amountTokens = _ethIn(maxSlippage, msg.value);
         token.transferFrom(address(this), msg.sender, amountTokens);
-
-        token_reserves -= amountTokens;
-        eth_reserves += msg.value;
     }
 
     // Function getAmountOut: for 2 reserves and 1 asset, outputs the equivalent amount to swap
@@ -267,21 +242,47 @@ contract TokenExchange is Ownable {
         accept = (slippage <= _maxSlippage);
     }
 
+    function _ethIn(
+        uint maxSlippage,
+        uint amountETH
+    ) internal poolExist returns (uint amountTokens) {
+        require(amountETH > 0, "Please swap more than 0 ETH");
+
+        amountTokens = getAmountOut(eth_reserves, token_reserves, amountETH);
+
+        require(
+            amountTokens <= token_reserves - 1,
+            "Not enough token in rerserve"
+        );
+
+        require(
+            checkSlippage(
+                eth_reserves,
+                token_reserves,
+                amountETH,
+                amountTokens,
+                maxSlippage
+            )
+        );
+
+        eth_reserves += amountETH;
+        token_reserves -= amountTokens;
+    }
+
     /* ========================= ZK Functions =========================  */
 
     mapping(bytes32 => uint) private zkBalances;
 
-    function zkDeposit(bytes32 sha256Digest) external payable poolExist {
-        uint amountTokens = getAmountOut(
-            eth_reserves,
-            token_reserves,
-            msg.value
-        );
-
-        zkBalances[sha256Digest] += amountTokens;
+    function zkSwapETHForTokens(
+        uint amountETH,
+        uint maxSlippage,
+        bytes32 zkKey
+    ) external payable poolExist {
+        uint amountTokens = _ethIn(maxSlippage, amountETH);
+        zkBalances[zkKey] = amountTokens;
     }
 
-    function zkWithdraw() external payable poolExist {
-        // TODO: Impement this function
+    function zkWithdraw(bytes32 zkKey) external payable poolExist {
+        // TODO: Impement this function and fix verifier contract
     }
 }
