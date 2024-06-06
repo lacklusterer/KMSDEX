@@ -6,3 +6,4 @@ cache/
 /zk_app/zokrates/artifacts
 /zk_app/zokrates/peggy/
 /zk_app/zokrates/victor/
+zk_app/zokrates/proof.json
