@@ -8,7 +8,7 @@ fi
 ./scripts/compile.sh
 ./scripts/keygen.sh
 
-ARGS=$(python ./scripts/in.py $1 $2 $3 $4)
+ARGS=$(python3 ./scripts/in.py $1 $2 $3 $4)
 LAST_ARG=$(echo "$ARGS" | awk '{print $7}')
 echo "$ARGS" | awk '{print $1, $2, $3, $4, $5, $6}' | xargs ./scripts/comproof.sh
 echo "SHA-256 digest: $LAST_ARG"
