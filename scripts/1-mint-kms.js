@@ -20,9 +20,15 @@ const KMSExchange = new web3.eth.Contract(exchange_abi, exchange_address);
 
 async function main() {
 	try {
+		const amountTokens = web3.utils.toWei("5000", "ether"); // Amount of tokens to send
+		const ethAmount = web3.utils.toWei("5000", "ether"); // Amount of ETH to send
+
 		const account = await web3.eth.accounts.privateKeyToAccount(pkey).address;
 		// NOTE: Call functions here
-		mint(account, 10000);
+		await mint(account, 10000);
+		await getBalance(account);
+		await createPool(amountTokens, ethAmount);
+		await getReserve();
 		// NOTE: End
 	} catch (error) {
 		console.error("Error in script execution:", error);
@@ -49,46 +55,34 @@ async function getReserve() {
 	console.log(`Token Reserve: ${reserves[1]}`);
 }
 
-async function callZkWithdraw(zkKey) {
-	try {
-		const account = web3.eth.accounts.privateKeyToAccount(pkey).address;
+const createPool = async (amountTokens, ethAmount) => {
+	const account = web3.eth.accounts.privateKeyToAccount(pkey);
+	web3.eth.accounts.wallet.add(account);
+	web3.eth.defaultAccount = account.address;
 
-		// Read the proof from the JSON file
-		const proofData = JSON.parse(fs.readFileSync("../zk_app/proof.json"));
-		const { proof, inputs } = proofData;
+	const data = KMSExchange.methods.createPool(amountTokens).encodeABI();
 
-		const txData = KMSExchange.methods
-			.zkWithdraw(
-				{
-					a: proof.a,
-					b: proof.b,
-					c: proof.c,
-				},
-				inputs,
-				zkKey
-			)
-			.encodeABI();
+	const tx = {
+		from: account.address,
+		to: exchange_address,
+		gas: await KMSExchange.methods
+			.createPool(amountTokens)
+			.estimateGas({ from: account.address, value: ethAmount }),
+		data: data,
+		value: ethAmount, // Amount of ETH to send with the transaction
+	};
 
-		const tx = {
-			from: account,
-			to: exchange_address,
-			gas: 2000000, // Adjust the gas limit as needed
-			data: txData,
-		};
+	const signedTx = await web3.eth.accounts.signTransaction(tx, pkey);
 
-		const signedTx = await web3.eth.accounts.signTransaction(tx, pkey);
-		const receipt = await web3.eth.sendSignedTransaction(
-			signedTx.rawTransaction
-		);
-		console.log(
-			"zkWithdraw Transaction successful with hash:",
-			receipt.transactionHash
-		);
-	} catch (error) {
-		console.error("Error in zkWithdraw execution:", error);
-		throw error;
-	}
-}
+	web3.eth
+		.sendSignedTransaction(signedTx.rawTransaction)
+		.on("receipt", (receipt) => {
+			console.log("Transaction successful with hash:", receipt.transactionHash);
+		})
+		.on("error", (error) => {
+			console.error("Error sending transaction:", error);
+		});
+};
 
 main().catch((error) => {
 	console.error("Error in script execution:", error);
