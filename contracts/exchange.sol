@@ -75,10 +75,7 @@ contract TokenExchange is Ownable, ExchangeHelper {
         lp_providers.pop();
     }
 
-    // Function getSwapFee: Returns the current swap fee ratio to the client.
-    function getSwapFee() public view returns (uint, uint) {
-        return (swap_fee_numerator, swap_fee_denominator);
-    }
+
 
     // Function getReserves
     function getReserves() public view returns (uint, uint) {

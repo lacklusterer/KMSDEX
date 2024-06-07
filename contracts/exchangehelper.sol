@@ -7,6 +7,11 @@ contract ExchangeHelper {
 	
 	uint private multiplier = 10 ** 5;
 
+    // Function getSwapFee: Returns the current swap fee ratio to the client.
+    function getSwapFee() internal view returns (uint, uint) {
+        return (swap_fee_numerator, swap_fee_denominator);
+    }
+
 	function getAmountOut(
 		uint _reserveIn,
 		uint _reserveOut,
