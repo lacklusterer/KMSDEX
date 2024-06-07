@@ -43,3 +43,8 @@ npm i
 - EXCHANGE_ADDRESS : automatically set when run deploy script
 - TOKEN_ABI_PATH="./artifacts/contracts/token.sol/Token.json"
 - EXCHANGE_ABI_PATH="./artifacts/contracts/exchange.sol/exchange.json"
+
+### Referer
+- [Instruction](https://cs251.stanford.edu/hw/proj4.pdf)
+- [Lecture](https://cs251.stanford.edu/lectures/lecture10.pdf)
+- [Uniswap v3](https://docs.uniswap.org/concepts/overview)
