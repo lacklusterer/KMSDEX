@@ -44,6 +44,19 @@ npm i
 - TOKEN_ABI_PATH="./artifacts/contracts/token.sol/Token.json"
 - EXCHANGE_ABI_PATH="./artifacts/contracts/exchange.sol/exchange.json"
 
+### Run hardhat
+```bash
+  npx hardhat node
+```
+  
+- open new terminal, run the following command to deploy
+```bash
+  npx hardhat run --network localhost scripts/deploy_token.js
+  npx hardhat run --network localhost scripts/deploy_exchange.js
+```
+
+  
+
 ### Referer
 - [Instruction](https://cs251.stanford.edu/hw/proj4.pdf)
 - [Lecture](https://cs251.stanford.edu/lectures/lecture10.pdf)
