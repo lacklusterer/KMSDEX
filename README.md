@@ -38,9 +38,9 @@ npm i
 
 ### Set these variable in your .env file:
 
-- PRIVATE_KEY=""  //private key of deployer
-- TOKEN_ADDRESS=""  //automatically set when run deploy script
-- EXCHANGE_ADDRESS=""  //automatically set when run deploy script
+- PRIVATE_KEY=""  #private key of deployer
+- TOKEN_ADDRESS=""  #automatically set when run deploy script
+- EXCHANGE_ADDRESS=""  #automatically set when run deploy script
 - TOKEN_ABI_PATH="./artifacts/contracts/token.sol/Token.json"
 - EXCHANGE_ABI_PATH="./artifacts/contracts/exchange.sol/exchange.json"
 
