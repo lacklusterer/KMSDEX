@@ -6,7 +6,7 @@ async function main() {
 	const verifierContract = await VerifierContract.deploy();
 	await verifierContract.deployed();
 
-	const envFilePath = "./.env";
+	const envFilePath = ".env";
 	const newAddress = `VERIFIER_ADDRESS=${verifierContract.address}`;
 
 	try {

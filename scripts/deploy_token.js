@@ -6,7 +6,7 @@ async function main() {
 	const tokenContract = await TokenContract.deploy();
 	await tokenContract.deployed();
 
-	const envFilePath = "./.env";
+	const envFilePath = ".env";
 	const newAddress = `TOKEN_ADDRESS=${tokenContract.address}`;
 
 	try {

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: WTFPL
 // This file is MIT Licensed.
 //
 // Copyright 2017 Christian Reitwiessner

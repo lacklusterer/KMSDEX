@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: WTFPL
 pragma solidity ^0.8.0;
 
 import "./token.sol";
@@ -12,7 +12,7 @@ contract TokenExchange is Ownable, ExchangeHelper {
 	address tokenAddr = 0x5FbDB2315678afecb367f032d93F642f64180aa3; // WARNING: update after deploying token
 	Token public token = Token(tokenAddr);
 
-	address verifierAddr = 0x5FbDB2315678afecb367f032d93F642f64180aa3; // WARNING: update after deploying verifier
+	address verifierAddr = 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512; // WARNING: update after deploying verifier
 
 	// Liquidity pool for the exchange
 	uint private token_reserves = 0;
@@ -74,8 +74,6 @@ contract TokenExchange is Ownable, ExchangeHelper {
         lp_providers[index] = lp_providers[lp_providers.length - 1];
         lp_providers.pop();
     }
-
-
 
     // Function getReserves
     function getReserves() public view returns (uint, uint) {
