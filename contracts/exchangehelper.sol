@@ -37,7 +37,8 @@ contract ExchangeHelper {
 		uint currentRate = (_reserveIn * multiplier) / _reserveOut;
 		uint afterTradeRate = ((_reserveIn + _amountIn) * multiplier) /
 			(_reserveOut - _amountOut);
-		uint slippage = ((afterTradeRate - currentRate) * 100) / currentRate;
+		uint slippage = ((afterTradeRate - currentRate) * multiplier) /
+			currentRate;
 		emit CheckSlippageDebug(slippage);
 		accept = (slippage <= _maxSlippage);
 	}
