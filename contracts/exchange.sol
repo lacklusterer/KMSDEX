@@ -12,8 +12,6 @@ contract TokenExchange is Ownable, ExchangeHelper {
 	address tokenAddr = 0x5FbDB2315678afecb367f032d93F642f64180aa3; // WARNING: update after deploying token
 	Token public token = Token(tokenAddr);
 
-	address verifierAddr = 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512; // WARNING: update after deploying verifier
-
 	// Liquidity pool for the exchange
 	uint private token_reserves = 0;
 	uint private eth_reserves = 0;
@@ -64,199 +62,167 @@ contract TokenExchange is Ownable, ExchangeHelper {
 		lps[msg.sender] = 100;
 	}
 
-    // Function removeLP: removes a liquidity provider from the list.
-    // This function also removes the gap left over from simply running "delete".
-    function removeLP(uint index) private {
-        require(
-            index < lp_providers.length,
-            "specified index is larger than the number of lps"
-        );
-        lp_providers[index] = lp_providers[lp_providers.length - 1];
-        lp_providers.pop();
-    }
-
-    // Function getReserves
-    function getReserves() public view returns (uint, uint) {
-        return (eth_reserves, token_reserves);
-    }
-
-    /* ========================= Liquidity Provider Functions =========================  */
-
-    modifier poolExist() {
-        require(eth_reserves > 0, "No liquidity pool");
-        require(token_reserves > 0, "No liquidity pool");
-        _;
-    }
-
-    function ethToToken(
-        uint _amountETH
-    ) internal view poolExist returns (uint) {
-        return _amountETH * (token_reserves / eth_reserves);
-    }
-
-    // Function addLiquidity: Adds liquidity based on ETH in msg.value
-    function addLiquidity() external payable poolExist {
-        require(msg.value > 0, "Need to ETH to add liquidity");
-
-        uint tokenAmount = ethToToken(msg.value);
-        require(tokenAmount <= token.balanceOf(msg.sender), "Not enough token");
-
-        token_reserves += tokenAmount;
-        eth_reserves += msg.value;
-        k = eth_reserves * token_reserves;
-
-        token.transferFrom(msg.sender, address(this), tokenAmount);
-
-        uint newShares = (msg.value * total_shares) / eth_reserves;
-        lps[msg.sender] = newShares;
-        total_shares += newShares;
-    }
-
-    // Function removeLiquidity: Removes liquidity given the desired amount of ETH to remove.
-    function removeLiquidity(uint amountETH) public payable poolExist {
-        uint sharesRemove = (amountETH / eth_reserves) * total_shares;
-
-        require(sharesRemove < total_shares, "You don't own enough shares");
-        require(
-            sharesRemove <= lps[msg.sender],
-            "Removing more ETH than your shares"
-        );
-
-        uint amountToken = ethToToken(amountETH);
-
-        require(
-            amountToken < token_reserves - 1,
-            "Removing too much liquidity"
-        );
-        require(amountETH < eth_reserves - 1, "Removing too much liquidity");
-
-        eth_reserves -= amountETH;
-        token_reserves -= amountToken;
-        k = eth_reserves * token_reserves;
-
-        token.transferFrom(address(this), msg.sender, amountToken);
-        payable(msg.sender).transfer(amountETH);
-
-        total_shares -= sharesRemove;
-        lps[msg.sender] -= sharesRemove;
-    }
-
-    // Function removeAllLiquidity: Removes all liquidity that msg.sender is entitled to withdraw
-    // You can change the inputs, or the scope of your function, as needed.
-    function removeAllLiquidity() external payable poolExist {
-        uint ethAmount = eth_reserves * (lps[msg.sender] / total_shares);
-        uint tokenAmount = ethToToken(ethAmount);
-
-        payable(msg.sender).transfer(ethAmount);
-        token.transferFrom(address(this), msg.sender, tokenAmount);
-
-        eth_reserves -= ethAmount;
-        token_reserves -= tokenAmount;
-        k = ethAmount * tokenAmount;
-
-        total_shares -= lps[msg.sender];
-        lps[msg.sender] = 0;
-    }
-
-    /*** TODO:  Define additional functions for liquidity fees ***/
-
-    /* ========================= Swap Functions =========================  */
-
-    // Function swapTokensForETH: Swaps your token with ETH
-    function swapTokensForETH(
-        uint amountTokens,
-        uint maxSlippage
-    ) external payable poolExist {
-        require(amountTokens > 0, "Please swap more than 0 token");
-        require(
-            amountTokens <= token.balanceOf(msg.sender),
-            "Not enough tokens"
-        );
-
-        uint amountETH = getAmountOut(
-            amountTokens,
-            token_reserves,
-            eth_reserves
-        );
-
-        require(amountETH <= eth_reserves - 1, "Not enough ETH in reserve");
-
-        require(
-            checkSlippage(
-                token_reserves,
-                eth_reserves,
-                amountTokens,
-                amountETH,
-                maxSlippage
-            )
-        );
-
-        token.transferFrom(msg.sender, address(this), amountTokens);
-        payable(msg.sender).transfer(amountETH);
-
-        token_reserves += amountTokens;
-        eth_reserves -= amountETH;
-    }
-
-    // Function swapETHForTokens: Swaps ETH for your tokens
-    function swapETHForTokens(uint maxSlippage) external payable poolExist {
-        uint amountTokens = _ethIn(maxSlippage, msg.value);
-        token.transferFrom(address(this), msg.sender, amountTokens);
-    }
-
-    function _ethIn(
-        uint maxSlippage,
-        uint amountETH
-    ) internal poolExist returns (uint amountTokens) {
-        require(amountETH > 0, "Please swap more than 0 ETH");
-
-        amountTokens = getAmountOut(eth_reserves, token_reserves, amountETH);
-
-        require(
-            amountTokens <= token_reserves - 1,
-            "Not enough token in rerserve"
-        );
-
-        require(
-            checkSlippage(
-                eth_reserves,
-                token_reserves,
-                amountETH,
-                amountTokens,
-                maxSlippage
-            )
-        );
-
-        eth_reserves += amountETH;
-		token_reserves -= amountTokens;
+	// Function removeLP: removes a liquidity provider from the list.
+	// This function also removes the gap left over from simply running "delete".
+	function removeLP(uint index) private {
+		require(
+			index < lp_providers.length,
+			"specified index is larger than the number of lps"
+		);
+		lp_providers[index] = lp_providers[lp_providers.length - 1];
+		lp_providers.pop();
 	}
 
-	/* ========================= ZK Functions =========================  */
-	// WARNING: UNTESTED
+	// Function getReserves
+	function getReserves() public view returns (uint, uint) {
+		return (eth_reserves, token_reserves);
+	}
 
-	mapping(bytes32 => uint) private zkBalances;
+	/* ========================= Liquidity Provider Functions =========================  */
 
-	// This function is similar to the normal swap function, but does not pay tokens immediately
-	// instead, the amount of tokens is mapped to the user provided sha256 digest. Using zk-snark
-	// proof to prove the knowledge of the pre-image of the digest, the user can withdraw	
-	function zkSwapETHForTokens(
-		uint maxSlippage,
-		bytes32 zkKey
+	modifier poolExist() {
+		require(eth_reserves > 0, "No liquidity pool");
+		require(token_reserves > 0, "No liquidity pool");
+		_;
+	}
+
+	function ethToToken(
+		uint _amountETH
+	) internal view poolExist returns (uint) {
+		return _amountETH * (token_reserves / eth_reserves);
+	}
+
+	// Function addLiquidity: Adds liquidity based on ETH in msg.value
+	function addLiquidity() external payable poolExist {
+		require(msg.value > 0, "Need to ETH to add liquidity");
+
+		uint tokenAmount = ethToToken(msg.value);
+		require(tokenAmount <= token.balanceOf(msg.sender), "Not enough token");
+
+		token_reserves += tokenAmount;
+		eth_reserves += msg.value;
+		k = eth_reserves * token_reserves;
+
+		token.transferFrom(msg.sender, address(this), tokenAmount);
+
+		uint newShares = (msg.value * total_shares) / eth_reserves;
+		lps[msg.sender] = newShares;
+		total_shares += newShares;
+	}
+
+	// Function removeLiquidity: Removes liquidity given the desired amount of ETH to remove.
+	function removeLiquidity(uint amountETH) public payable poolExist {
+		uint sharesRemove = (amountETH / eth_reserves) * total_shares;
+
+		require(sharesRemove < total_shares, "You don't own enough shares");
+		require(
+			sharesRemove <= lps[msg.sender],
+			"Removing more ETH than your shares"
+		);
+
+		uint amountToken = ethToToken(amountETH);
+
+		require(
+			amountToken < token_reserves - 1,
+			"Removing too much liquidity"
+		);
+		require(amountETH < eth_reserves - 1, "Removing too much liquidity");
+
+		eth_reserves -= amountETH;
+		token_reserves -= amountToken;
+		k = eth_reserves * token_reserves;
+
+		token.transferFrom(address(this), msg.sender, amountToken);
+		payable(msg.sender).transfer(amountETH);
+
+		total_shares -= sharesRemove;
+		lps[msg.sender] -= sharesRemove;
+	}
+
+	// Function removeAllLiquidity: Removes all liquidity that msg.sender is entitled to withdraw
+	// You can change the inputs, or the scope of your function, as needed.
+	function removeAllLiquidity() external payable poolExist {
+		uint ethAmount = eth_reserves * (lps[msg.sender] / total_shares);
+		uint tokenAmount = ethToToken(ethAmount);
+
+		payable(msg.sender).transfer(ethAmount);
+		token.transferFrom(address(this), msg.sender, tokenAmount);
+
+		eth_reserves -= ethAmount;
+		token_reserves -= tokenAmount;
+		k = ethAmount * tokenAmount;
+
+		total_shares -= lps[msg.sender];
+		lps[msg.sender] = 0;
+	}
+
+	/*** TODO:  Define additional functions for liquidity fees ***/
+
+	/* ========================= Swap Functions =========================  */
+
+	// Function swapTokensForETH: Swaps your token with ETH
+	function swapTokensForETH(
+		uint amountTokens,
+		uint maxSlippage
 	) external payable poolExist {
-		uint amountTokens = _ethIn(maxSlippage, msg.value);
-		zkBalances[zkKey] = amountTokens;
+		require(amountTokens > 0, "Please swap more than 0 token");
+		require(
+			amountTokens <= token.balanceOf(msg.sender),
+			"Not enough tokens"
+		);
+
+		uint amountETH = getAmountOut(
+			amountTokens,
+			token_reserves,
+			eth_reserves
+		);
+
+		require(amountETH <= eth_reserves - 1, "Not enough ETH in reserve");
+
+		require(
+			checkSlippage(
+				token_reserves,
+				eth_reserves,
+				amountTokens,
+				amountETH,
+				maxSlippage
+			)
+		);
+
+		token.transferFrom(msg.sender, address(this), amountTokens);
+		payable(msg.sender).transfer(amountETH);
+
+		token_reserves += amountTokens;
+		eth_reserves -= amountETH;
 	}
 
-	IVerifier verifier = IVerifier(verifierAddr);
+	// Function swapETHForTokens: Swaps ETH for your tokens
+	function swapETHForTokens(uint maxSlippage) external payable poolExist {
+		require(msg.value > 0, "Please swap more than 0 ETH");
 
-	function zkWithdraw(
-		IVerifier.Proof memory proof,
-		uint[2] memory input,
-		bytes32 zkKey
-	) external poolExist {
-		bool verificationResult = verifier.verifyTx(proof, input);
-		require(verificationResult, "Verification failed");
+		uint amountTokens = getAmountOut(
+			eth_reserves,
+			token_reserves,
+			msg.value
+		);
 
-		token.transferFrom(address(this), msg.sender, zkBalances[zkKey]);
+		require(
+			amountTokens <= token_reserves - 1,
+			"Not enough token in rerserve"
+		);
+
+		require(
+			checkSlippage(
+				eth_reserves,
+				token_reserves,
+				msg.value,
+				amountTokens,
+				maxSlippage
+			)
+		);
+
+		token.transferFrom(address(this), msg.sender, amountTokens);
+		eth_reserves += msg.value;
+		token_reserves -= amountTokens;
 	}
 }
