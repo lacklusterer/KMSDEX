@@ -50,16 +50,17 @@ describe("TokenExchange", function () {
 
 			await giveTokens(addr1, tokenAmount);
 
-			const max_exchange_rate = ethers.BigNumber.from(
-				ethers.utils.parseUnits("2", 23)
+			const max_slippage = ethers.BigNumber.from(
+				ethers.utils.parseUnits("0.1", 3)
 			);
+			// Max slippage = 1%
 
 			const balanceBeforeTrade = await hre.ethers.provider.getBalance(
 				addr1.address
 			);
 			const tx = await exchange
 				.connect(addr1)
-				.swapTokensForETH(tokenAmount, max_exchange_rate);
+				.swapTokensForETH(tokenAmount, max_slippage);
 
 			const receipt = await tx.wait();
 			const gasUsed = receipt.gasUsed;
@@ -105,31 +106,29 @@ describe("TokenExchange", function () {
 				tokenAmount,
 				ethAmount
 			);
-			console.log("ETH amount: " + ethAmount);
-			console.log("Slippage: " + slippage);
 
-			const max_exchange_rate = ethers.BigNumber.from(
-				ethers.utils.parseUnits("1", 23)
+			const max_slippage = ethers.BigNumber.from(
+				ethers.utils.parseUnits("0.038", 3)
 			);
-			console.log("Max exchange rate: " + max_exchange_rate);
 
 			const tx = exchange
 				.connect(addr1)
-				.swapTokensForETH(tokenAmount, max_exchange_rate);
+				.swapTokensForETH(tokenAmount, max_slippage);
 
+			await expect(slippage).to.be.greaterThan(max_slippage);
 			await expect(tx).to.be.revertedWith("Slippage too large");
 		});
 
 		it("Should revert if don't have enough tokens", async function () {
 			const tokenAmount = ethers.utils.parseUnits("1", 18);
 
-			const max_exchange_rate = ethers.BigNumber.from(
+			const max_slippage = ethers.BigNumber.from(
 				ethers.utils.parseUnits("2", 23)
 			);
 
 			const tx = exchange
 				.connect(addr1)
-				.swapTokensForETH(tokenAmount, max_exchange_rate);
+				.swapTokensForETH(tokenAmount, max_slippage);
 
 			await expect(tx).to.be.revertedWith("Not enough tokens");
 		});
@@ -141,12 +140,12 @@ describe("TokenExchange", function () {
 
 			await giveTokens(addr1, tokenAmount);
 
-			const max_exchange_rate = ethers.BigNumber.from(
+			const max_slippage = ethers.BigNumber.from(
 				ethers.utils.parseUnits("-1", 23)
 			);
 
 			await expect(
-				exchange.connect(addr1).swapTokensForETH(tokenAmount, max_exchange_rate)
+				exchange.connect(addr1).swapTokensForETH(tokenAmount, max_slippage)
 			).to.be.rejectedWith(Error);
 		});
 	});
@@ -154,7 +153,7 @@ describe("TokenExchange", function () {
 	describe("Swap ETH for tokens", function () {
 		it("Should swap ETH for tokens with correct exchange rate", async function () {
 			const ethIn = ethers.utils.parseUnits("1", 18);
-			const max_exchange_rate = ethers.BigNumber.from(
+			const max_slippage = ethers.BigNumber.from(
 				ethers.utils.parseUnits("2", 23)
 			);
 
@@ -162,7 +161,7 @@ describe("TokenExchange", function () {
 
 			const tx = await exchange
 				.connect(addr1)
-				.swapETHForTokens(max_exchange_rate, { value: ethIn });
+				.swapETHForTokens(max_slippage, { value: ethIn });
 
 			const tokensAfterTrade = await token.balanceOf(addr1.address);
 			// console.log(
@@ -190,18 +189,16 @@ describe("TokenExchange", function () {
 
 		it("Should revert if slippage too large", async function () {
 			const ethIn = ethers.utils.parseUnits("1", 18);
-			const max_exchange_rate = ethers.BigNumber.from(
-				ethers.utils.parseUnits("1", 5)
+			const max_slippage = ethers.BigNumber.from(
+				ethers.utils.parseUnits("0.038", 3)
 			);
-
-			const multiplier2 = ethers.BigNumber.from(10).pow(18);
 
 			const numerator = multiplier.mul(ethIn.add(bigETHReserves));
 			const denominator = bigTokenReserves;
 			const exchange_rate = numerator.div(denominator);
 
 			await expect(
-				exchange.connect(addr1).swapETHForTokens(max_exchange_rate, {
+				exchange.connect(addr1).swapETHForTokens(max_slippage, {
 					value: ethIn,
 				})
 			).to.be.revertedWith("Slippage too large");
@@ -245,15 +242,22 @@ async function sendETH(from, to, amount) {
 
 function calculateSlippage(_reserveIn, _reserveOut, _amountIn, _amountOut) {
 	const currentRate = _reserveIn.mul(multiplier).div(_reserveOut);
-	console.log(currentRate);
+
 	const afterTradeRate = _reserveIn
 		.add(_amountIn)
 		.mul(multiplier)
 		.div(_reserveOut.sub(_amountOut));
+
 	const slippage = afterTradeRate
 		.sub(currentRate)
-		.mul(ethers.BigNumber.from(100))
+		.mul(multiplier)
 		.div(currentRate);
+	//
+	// console.log(
+	// 	"Trade's slippage is " + ethers.utils.formatUnits(slippage, "3") + "%"
+	// );
+	// console.log("Raw slippage: " + slippage);
+	// console.log(ethers.utils.parseUnits("0.039", 3));
+	//
 	return slippage;
-	console.log(slippage);
 }

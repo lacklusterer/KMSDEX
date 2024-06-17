@@ -186,7 +186,8 @@ contract TokenExchange is Ownable, ExchangeHelper {
 				amountTokens,
 				amountETH,
 				maxSlippage
-			)
+			),
+			"Slippage too large"
 		);
 
 		token.transferFrom(msg.sender, address(this), amountTokens);
@@ -218,7 +219,8 @@ contract TokenExchange is Ownable, ExchangeHelper {
 				msg.value,
 				amountTokens,
 				maxSlippage
-			)
+			),
+			"Slippage too large"
 		);
 
 		token.transfer(msg.sender, amountTokens);
