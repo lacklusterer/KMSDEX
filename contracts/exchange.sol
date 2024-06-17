@@ -132,7 +132,7 @@ contract TokenExchange is Ownable, ExchangeHelper {
 		token_reserves -= amountToken;
 		k = eth_reserves * token_reserves;
 
-		token.transferFrom(address(this), msg.sender, amountToken);
+		token.transfer(msg.sender, amountToken);
 		payable(msg.sender).transfer(amountETH);
 
 		total_shares -= sharesRemove;
@@ -146,7 +146,7 @@ contract TokenExchange is Ownable, ExchangeHelper {
 		uint tokenAmount = ethToToken(ethAmount);
 
 		payable(msg.sender).transfer(ethAmount);
-		token.transferFrom(address(this), msg.sender, tokenAmount);
+		token.transfer(msg.sender, tokenAmount);
 
 		eth_reserves -= ethAmount;
 		token_reserves -= tokenAmount;
@@ -221,7 +221,7 @@ contract TokenExchange is Ownable, ExchangeHelper {
 			)
 		);
 
-		token.transferFrom(address(this), msg.sender, amountTokens);
+		token.transfer(msg.sender, amountTokens);
 		eth_reserves += msg.value;
 		token_reserves -= amountTokens;
 	}
