@@ -18,12 +18,11 @@ contract ExchangeHelper {
 		uint _reserveOut,
 		uint _amountIn
 	) internal returns (uint amountOut) {
-		uint amountInDeducted = (multiplier * _amountIn * swap_fee_numerator) /
-			swap_fee_denominator;
-		uint outNumberator = _reserveOut * amountInDeducted;
-		uint outDenominator = _reserveIn * multiplier + amountInDeducted;
+		amountOut =
+			((swap_fee_denominator - swap_fee_numerator) *
+				(_amountIn * _reserveOut)) /
+			((_reserveIn + _amountIn) * swap_fee_denominator);
 
-		amountOut = outNumberator / outDenominator;
 		emit GetAmountOutDebug(amountOut);
 	}
 

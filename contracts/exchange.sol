@@ -172,9 +172,9 @@ contract TokenExchange is Ownable, ExchangeHelper {
 		);
 
 		uint amountETH = getAmountOut(
-			amountTokens,
 			token_reserves,
-			eth_reserves
+			eth_reserves,
+			amountTokens
 		);
 
 		require(amountETH <= eth_reserves - 1, "Not enough ETH in reserve");
