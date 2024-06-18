@@ -25,12 +25,12 @@ Main participants:
 - Traders calls the AMM contract to swap assets, taking advantage of the volatility of one asset and the stability of another to make profit.
 
 ### 1. Exchange rate
+The first think to consider when it comes to any Exchange is the exchange rate.
 For a liquidity pool of 2 assets that has (`x` units of **X**) and (`y` units of **Y**), a reasonable goal would be to maintain the balance of these assets in value. Otherwise, it wouldn't be much of a decentralized exchange and more of a decentralized pot-luck.
 
+Consider the following example:
 - Alice wants to sell an amount of **X**, `dx` for some `dy` in return. The pool state is updated to maintain the price balance. For this trade, the **marginal price** is defined as `p = -dy/dx`, the exchange rate at the moment.
-
-- The marginal price, can be used to estimate the value of assets in the pool, X in terms of Y: `px = y`
-
+- This **marginal price** can be used to estimate the value of assets in the pool, X in terms of Y: `px = y`
 - Plugging into definition for the following differential equation:
 
 $$
@@ -42,3 +42,17 @@ $$
 Indeed, by maintaining this constant product, the AMM can ensure that the price of the assets in the pool is balanced. This is known as the **Constant Product Market Maker**.
 
 ![imagefromslide](./res/constprodmm.png)
+
+### Constant Product Market Maker
+With the constant product market maker, the exchange rate is maintained. With $x \cdot y = k$, we use `k` to calculate the values going out of the pool for every assets traded into the pool. And update `k` when LPs deposit or withdraw. 
+
+For an arbitrary trade of amount $\Delta x$:
+
+$$
+(x - \Delta x) (y + \Delta y) = k
+$$
+
+$$
+\text{pay: } \Delta y = \frac{y \cdot \Delta x}{x - \Delta x} \quad \text{(k is maintained)}
+$$
+
