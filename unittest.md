@@ -1,6 +1,6 @@
 # Testing
 To validate the correctness of implementation, I used hardhat with chai and mocha library to create [unit tests](./test/test-script.js).
-```bash
+```
   TokenExchange
     Liquidity functionalities
       Normal
@@ -32,4 +32,4 @@ To validate the correctness of implementation, I used hardhat with chai and moch
   16 passing (3s)
 ```
 
-Basic test cases to ensure that the DEX function correctly were implemented, with console log (commented out) for a more detailed view. Calculations were done off-chain with javascript and library bignumber.js to validate against on-chain calculations.
+Basic test cases to ensure that the DEX function correctly were implemented, with console log (commented out) for a more detailed view. Calculations were done off-chain with javascript and library bignumber.js to validate against on-chain calculations. Some of the tests are yet to be implemented.

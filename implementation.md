@@ -58,4 +58,4 @@ function ethToToken(
 		amountToken = _amountETH * (token_reserves / eth_reserves);
 	}
 ```
-For assisting liquidity changing functions, take in account the constant product to ensure added assets have the same ratio as the pool.
+For assisting liquidity changing functions, take in account the constant product to ensure added assets have the same ratio as the pool. Checks were also in place to ensure that assets in liquidity pool do not fall below 1.

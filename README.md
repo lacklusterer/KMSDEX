@@ -4,7 +4,7 @@
 
 Report of my attempt on creating a decentralized cryptocurrency exchange, based on Stanford University's CS251 proj4.
 
-This project is worked on intermittently over the course of a month, starting from May 21st, 2024. It will cover how AMM work, the design, implementation, as well as limitations. Most importantly, it will be a refection of what I have learned, challenges I faced, and what I can do better in the future.
+This project was worked on intermittently over the course of a month, starting from May 21st, 2024. It will cover how AMM work, the design, implementation, as well as limitations. Most importantly, it will be a refection of what I have learned, challenges I faced, and what I can do better in the future.
 
 ## II. The Decentralized Exchange
 
@@ -92,3 +92,12 @@ Consider that $\Delta y = \frac{y \Delta x}{x - \Delta x}$, this means that the 
 
 ## V. Testing
 [Unit tests](./unittest.md) 
+
+## VI. Closing thoughts and reflections
+This project has been a great learning experience for me. It also served as my introduction to the blockchain technology and a way to familiarize myself with the technology stack.
+
+- **Challenges**: New language, new workflow, new framework. I had to learn a lot of things on the fly, and it was a bit overwhelming at times. The learning curve was steep, but I managed. Special thanks to caffein, as well has various generative AI for giving answers that do not work half of the time.
+
+- **Reflections**: I could have done better had I managed my time better. I was focusing too much on getting it to work first before understanding the implementation. After figuring that out, the latter part of the project has been smoother. I hope this unconventional approach of a "Report" is acceptable.
+
+Finally, thank you for your time!
