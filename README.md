@@ -85,4 +85,7 @@ Slippage is a significant problem in decentralized exchanges (DEXs) that can occ
 
 ![slippage](./res/slippage.png) 
 
-Consider that $\Delta y = \frac{y \Delta x}{x - \Delta x}$, this means that the pool will never run out of liquidity, since as $\Delta x\$ approaches x, the price for it approaches $\inf$
+Consider that $\Delta y = \frac{y \Delta x}{x - \Delta x}$, this means that the pool will never run out of liquidity, since as $\Delta x\$ approaches x, the price for it approaches $\infty$
+
+## IV. Implementation
+[implementation](./implementation.md) 
