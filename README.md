@@ -58,9 +58,9 @@ $$
 ### 2. Implications and Incentives
 
 #### 2.1 LPs
-In order to entice people to become **LPs**, a percentage of every trade is be taken out as reward, denoted as $\Phi \in [0, 1]$.
+In order to entice people to become **LPs**, a percentage of every trade is be taken out as reward, denoted as $\Phi \in [0, 1]$. For every trade where $\Delta y $ is paid, $\Phi \Delta y$ goes to the pool.
 
-For every trade where $\Delta y $ is paid, $\Phi \Delta y$ goes to the pool. 
+Liquidity providers activities must *not* change the `marginal price`, and so the ratio of assets going in or out must match that ratio in the pool, and will move constant `k` up or down accordingly.
 
 $$
 \text{Maintain } (x - \Delta x)(y + \Phi \Delta y) = k
@@ -85,4 +85,4 @@ Slippage is a significant problem in decentralized exchanges (DEXs) that can occ
 
 ![slippage](./res/slippage.png) 
 
-Consider that $\Delta y = \frac{1}{\Phi} \frac{y \Delta x}{x - \Delta x}$, this means that the pool will never run out of liquidity, since as $\Delta x\$ approaches x, the price for it approaches $\inf$
+Consider that $\Delta y = \frac{y \Delta x}{x - \Delta x}$, this means that the pool will never run out of liquidity, since as $\Delta x\$ approaches x, the price for it approaches $\inf$
