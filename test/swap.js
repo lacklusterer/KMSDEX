@@ -41,210 +41,242 @@ describe("TokenExchange", function () {
 
 		// Mapped to BigNumber for calculations
 		[bigETHReserves, bigTokenReserves] = [eth_reserves, token_reserves].map(
-			ethers.BigNumber.from,
+			ethers.BigNumber.from
 		);
 		// printLiquidity(exchange);
 	});
 
 	describe("Liquidity functionalities", function () {
-		it("Should create liquidity pool with correct reserves", async function () {
-			const [currentTokenReserves, currentETHReserves] =
-				await exchange.getReserves();
-			expect(currentTokenReserves).to.equal(token_reserves);
-			expect(currentETHReserves).to.equal(eth_reserves);
+		describe("Normal", function () {
+			it("Should create liquidity pool with correct reserves", async function () {
+				const [currentTokenReserves, currentETHReserves] =
+					await exchange.getReserves();
+				expect(currentTokenReserves).to.equal(token_reserves);
+				expect(currentETHReserves).to.equal(eth_reserves);
+				expect(currentTokenReserves).to.equal(
+					await token.balanceOf(exchange.address)
+				);
+				expect(currentETHReserves).to.equal(
+					await hre.ethers.provider.getBalance(exchange.address)
+				);
+			});
+
+			it("Should add the correct amount of liquidity", async function () {
+				const ethAmount = ethers.utils.parseEther("1.5");
+				const tokenAmount = ethToToken(
+					ethAmount,
+					bigETHReserves,
+					bigTokenReserves
+				);
+				await token.mint(tokenAmount);
+				await token.approve(exchange.address, tokenAmount);
+				await exchange.addLiquidity({ value: ethAmount });
+
+				expect(bigTokenReserves.add(tokenAmount)).to.equal(
+					await token.balanceOf(exchange.address)
+				);
+
+				const ethrAfter = bigETHReserves.add(ethAmount);
+				expect(ethrAfter).to.equal(
+					await hre.ethers.provider.getBalance(exchange.address)
+				);
+			});
+
+			it("Should remove the correct amount of liquidity", async function () {
+				// TODO: Implement this
+			});
+
+			it("Should allow removal of all liquidity", async function () {
+				// TODO: Implement this
+			});
 		});
 
-		it("Should return the correct reserves", async function () {
-			const [currentTokenReserves, currentETHReserves] =
-				await exchange.getReserves();
-			expect(currentTokenReserves).to.equal(
-				await token.balanceOf(exchange.address),
-			);
-			expect(currentETHReserves).to.equal(
-				await hre.ethers.provider.getBalance(exchange.address),
-			);
-		});
+		describe("Specials", function () {
+			it("Should revert if trying to create a liquidity pool with insufficient resource.", async function () {
+				// TODO: Implement this
+			});
 
-		it("Should add the correct amount of liquidity", async function () {
-			const ethAmount = ethers.utils.parseEther("1.5");
-			const tokenAmount = ethToToken(
-				ethAmount,
-				bigETHReserves,
-				bigTokenReserves,
-			);
-			await token.mint(tokenAmount);
-			await token.approve(exchange.address, tokenAmount);
-			await exchange.addLiquidity({ value: ethAmount });
+			it("Should revert if not enough asset to add", async function () {
+				// TODO:Implement this
+			});
 
-			expect(bigTokenReserves.add(tokenAmount)).to.equal(
-				await token.balanceOf(exchange.address),
-			);
-
-			const ethrAfter = bigETHReserves.add(ethAmount);
-			expect(ethrAfter).to.equal(
-				await hre.ethers.provider.getBalance(exchange.address),
-			);
-		});
-	});
-
-	describe("Swap Tokens for ETH - Normal", function () {
-		it("Should swap tokens for ETH with correct exchange rate", async function () {
-			const tokenAmount = ethers.utils.parseUnits("1", 18);
-
-			await giveTokens(addr1, tokenAmount);
-
-			const max_slippage = ethers.BigNumber.from(
-				ethers.utils.parseUnits("0.1", 3),
-			);
-			// Max slippage = 1%
-
-			const balanceBeforeTrade = await hre.ethers.provider.getBalance(
-				addr1.address,
-			);
-			const tx = await exchange
-				.connect(addr1)
-				.swapTokensForETH(tokenAmount, max_slippage);
-
-			const receipt = await tx.wait();
-			const gasUsed = receipt.gasUsed;
-			const gasPrice = tx.gasPrice;
-			const gasFee = gasUsed.mul(gasPrice);
-			// console.log("Gas fee: " + ethers.utils.formatEther(gasFee));
-
-			const expectedETH = getAmountOut(
-				bigTokenReserves,
-				bigETHReserves,
-				tokenAmount,
-			);
-			// console.log("Expected ETH: " + ethers.utils.formatEther(expectedETH));
-			//
-			const balanceAfterTrade = await hre.ethers.provider.getBalance(
-				addr1.address,
-			);
-
-			// console.log(
-			// 	"Balance before trade: " + ethers.utils.formatEther(balanceBeforeTrade)
-			// );
-			// console.log(
-			// 	"Balance after trade: " + ethers.utils.formatEther(balanceAfterTrade)
-			// );
-			expect(balanceBeforeTrade.sub(gasFee).add(expectedETH)).to.equal(
-				balanceAfterTrade,
-			);
-		});
-
-		it("Should revert if slippage too large", async function () {
-			const tokenAmount = ethers.utils.parseUnits("1", 18);
-
-			await giveTokens(addr1, tokenAmount);
-
-			const ethAmount = getAmountOut(
-				bigTokenReserves,
-				bigETHReserves,
-				tokenAmount,
-			);
-			const slippage = calculateSlippage(
-				bigTokenReserves,
-				bigETHReserves,
-				tokenAmount,
-				ethAmount,
-			);
-
-			const max_slippage = ethers.BigNumber.from(
-				ethers.utils.parseUnits("0.038", 3),
-			);
-
-			const tx = exchange
-				.connect(addr1)
-				.swapTokensForETH(tokenAmount, max_slippage);
-
-			await expect(slippage).to.be.greaterThan(max_slippage);
-			await expect(tx).to.be.revertedWith("Slippage too large");
-		});
-
-		it("Should revert if don't have enough tokens", async function () {
-			const tokenAmount = ethers.utils.parseUnits("1", 18);
-
-			const max_slippage = ethers.BigNumber.from(
-				ethers.utils.parseUnits("2", 23),
-			);
-
-			const tx = exchange
-				.connect(addr1)
-				.swapTokensForETH(tokenAmount, max_slippage);
-
-			await expect(tx).to.be.revertedWith("Not enough tokens");
+			it("Should revert if trying to remove more liquidity shares", async function () {
+				// TODO: Implement this
+			});
 		});
 	});
 
-	describe("Swap Tokens for ETH - Special cases", () => {
-		it("Should reject if max_slippage is negative", async function () {
-			const tokenAmount = ethers.utils.parseUnits("1", 18);
+	describe("Swap Tokens for ETH", function () {
+		describe("Normal", function () {
+			it("Should swap tokens for ETH with correct exchange rate", async function () {
+				const tokenAmount = ethers.utils.parseUnits("1", 18);
 
-			await giveTokens(addr1, tokenAmount);
+				await giveTokens(addr1, tokenAmount);
 
-			const max_slippage = ethers.BigNumber.from(
-				ethers.utils.parseUnits("-1", 23),
-			);
+				const max_slippage = ethers.BigNumber.from(
+					ethers.utils.parseUnits("0.1", 3)
+				);
+				// Max slippage = 1%
 
-			await expect(
-				exchange.connect(addr1).swapTokensForETH(tokenAmount, max_slippage),
-			).to.be.rejectedWith(Error);
+				const balanceBeforeTrade = await hre.ethers.provider.getBalance(
+					addr1.address
+				);
+				const tx = await exchange
+					.connect(addr1)
+					.swapTokensForETH(tokenAmount, max_slippage);
+
+				const receipt = await tx.wait();
+				const gasUsed = receipt.gasUsed;
+				const gasPrice = tx.gasPrice;
+				const gasFee = gasUsed.mul(gasPrice);
+				// console.log("Gas fee: " + ethers.utils.formatEther(gasFee));
+
+				const expectedETH = getAmountOut(
+					bigTokenReserves,
+					bigETHReserves,
+					tokenAmount
+				);
+				// console.log("Expected ETH: " + ethers.utils.formatEther(expectedETH));
+				//
+				const balanceAfterTrade = await hre.ethers.provider.getBalance(
+					addr1.address
+				);
+
+				// console.log(
+				// 	"Balance before trade: " + ethers.utils.formatEther(balanceBeforeTrade)
+				// );
+				// console.log(
+				// 	"Balance after trade: " + ethers.utils.formatEther(balanceAfterTrade)
+				// );
+				expect(balanceBeforeTrade.sub(gasFee).add(expectedETH)).to.equal(
+					balanceAfterTrade
+				);
+			});
+
+			it("Should revert if slippage too large", async function () {
+				const tokenAmount = ethers.utils.parseUnits("1", 18);
+
+				await giveTokens(addr1, tokenAmount);
+
+				const ethAmount = getAmountOut(
+					bigTokenReserves,
+					bigETHReserves,
+					tokenAmount
+				);
+				const slippage = calculateSlippage(
+					bigTokenReserves,
+					bigETHReserves,
+					tokenAmount,
+					ethAmount
+				);
+
+				const max_slippage = ethers.BigNumber.from(
+					ethers.utils.parseUnits("0.038", 3)
+				);
+
+				const tx = exchange
+					.connect(addr1)
+					.swapTokensForETH(tokenAmount, max_slippage);
+
+				await expect(slippage).to.be.greaterThan(max_slippage);
+				await expect(tx).to.be.revertedWith("Slippage too large");
+			});
+
+			it("Should revert if don't have enough tokens", async function () {
+				const tokenAmount = ethers.utils.parseUnits("1", 18);
+
+				const max_slippage = ethers.BigNumber.from(
+					ethers.utils.parseUnits("2", 23)
+				);
+
+				const tx = exchange
+					.connect(addr1)
+					.swapTokensForETH(tokenAmount, max_slippage);
+
+				await expect(tx).to.be.revertedWith("Not enough tokens");
+			});
+		});
+
+		describe("Special", function () {
+			it("Should reject if max_slippage is negative", async function () {
+				const tokenAmount = ethers.utils.parseUnits("1", 18);
+
+				await giveTokens(addr1, tokenAmount);
+
+				const max_slippage = ethers.BigNumber.from(
+					ethers.utils.parseUnits("-1", 23)
+				);
+
+				await expect(
+					exchange.connect(addr1).swapTokensForETH(tokenAmount, max_slippage)
+				).to.be.rejectedWith(Error);
+			});
+
+			it("Should revert if not enough ETH in pool to pay", async function () {
+				// TODO: Implement this
+			});
 		});
 	});
-
 	describe("Swap ETH for tokens", function () {
-		it("Should swap ETH for tokens with correct exchange rate", async function () {
-			const ethIn = ethers.utils.parseUnits("1", 18);
-			const max_slippage = ethers.BigNumber.from(
-				ethers.utils.parseUnits("2", 23),
-			);
+		describe("Normal", function () {
+			it("Should swap ETH for tokens with correct exchange rate", async function () {
+				const ethIn = ethers.utils.parseUnits("1", 18);
+				const max_slippage = ethers.BigNumber.from(
+					ethers.utils.parseUnits("2", 23)
+				);
 
-			const tokensBeforeTrade = await token.balanceOf(addr1.address);
+				const tokensBeforeTrade = await token.balanceOf(addr1.address);
 
-			const tx = await exchange
-				.connect(addr1)
-				.swapETHForTokens(max_slippage, { value: ethIn });
+				const tx = await exchange
+					.connect(addr1)
+					.swapETHForTokens(max_slippage, { value: ethIn });
 
-			const tokensAfterTrade = await token.balanceOf(addr1.address);
-			// console.log(
-			// 	"Balance after swap: " + ethers.utils.formatUnits(tokensAfterTrade, 18)
-			// );
+				const tokensAfterTrade = await token.balanceOf(addr1.address);
+				// console.log(
+				// 	"Balance after swap: " + ethers.utils.formatUnits(tokensAfterTrade, 18)
+				// );
 
-			const expectedAmountTokens = getAmountOut(
-				bigETHReserves,
-				bigTokenReserves,
-				ethIn,
-			);
-			// console.log(
-			// 	"Expected tokens to receive: " +
-			// 		ethers.utils.formatUnits(expectedAmountTokens, 18)
-			// );
+				const expectedAmountTokens = getAmountOut(
+					bigETHReserves,
+					bigTokenReserves,
+					ethIn
+				);
+				// console.log(
+				// 	"Expected tokens to receive: " +
+				// 		ethers.utils.formatUnits(expectedAmountTokens, 18)
+				// );
 
-			expect(tokensAfterTrade).to.equals(expectedAmountTokens);
+				expect(tokensAfterTrade).to.equals(expectedAmountTokens);
+			});
+
+			it("Should revert if amount ETH sent is 0", async function () {
+				await expect(
+					exchange.connect(addr1).swapETHForTokens(0, { value: 0 })
+				).to.be.revertedWith("Please swap more than 0 ETH");
+			});
+
+			it("Should revert if slippage too large", async function () {
+				const ethIn = ethers.utils.parseUnits("1", 18);
+				const max_slippage = ethers.BigNumber.from(
+					ethers.utils.parseUnits("0.038", 3)
+				);
+
+				const numerator = multiplier.mul(ethIn.add(bigETHReserves));
+				const denominator = bigTokenReserves;
+				const exchange_rate = numerator.div(denominator);
+
+				await expect(
+					exchange.connect(addr1).swapETHForTokens(max_slippage, {
+						value: ethIn,
+					})
+				).to.be.revertedWith("Slippage too large");
+			});
 		});
 
-		it("Should revert if amount ETH sent is 0", async function () {
-			await expect(
-				exchange.connect(addr1).swapETHForTokens(0, { value: 0 }),
-			).to.be.revertedWith("Please swap more than 0 ETH");
-		});
-
-		it("Should revert if slippage too large", async function () {
-			const ethIn = ethers.utils.parseUnits("1", 18);
-			const max_slippage = ethers.BigNumber.from(
-				ethers.utils.parseUnits("0.038", 3),
-			);
-
-			const numerator = multiplier.mul(ethIn.add(bigETHReserves));
-			const denominator = bigTokenReserves;
-			const exchange_rate = numerator.div(denominator);
-
-			await expect(
-				exchange.connect(addr1).swapETHForTokens(max_slippage, {
-					value: ethIn,
-				}),
-			).to.be.revertedWith("Slippage too large");
+		describe("Special", function () {
+			it("Should revert if not enough ETH in pool to pay", async function () {
+				// TODO: Implement this
+			});
 		});
 	});
 });
