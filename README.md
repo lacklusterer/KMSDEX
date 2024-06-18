@@ -43,7 +43,6 @@ Indeed, by maintaining this constant product, the AMM can ensure that the price 
 
 ![imagefromslide](./res/constprodmm.png)
 
-### Constant Product Market Maker
 With the constant product market maker, the exchange rate is maintained. With $x \cdot y = k$, we use `k` to calculate the values going out of the pool for every assets traded into the pool. And update `k` when LPs deposit or withdraw. 
 
 For an arbitrary trade of amount $\Delta x$:
@@ -53,6 +52,37 @@ $$
 $$
 
 $$
-\text{pay: } \Delta y = \frac{y \cdot \Delta x}{x - \Delta x} \quad \text{(k is maintained)}
+\Delta y = \frac{y \cdot \Delta x}{x - \Delta x} \quad \text{(k is maintained)}
 $$
 
+### 2. Implications and Incentives
+
+#### 2.1 LPs
+In order to entice people to become **LPs**, a percentage of every trade is be taken out as reward, denoted as $\Phi \in [0, 1]$.
+
+For every trade where $\Delta y $ is paid, $\Phi \Delta y$ goes to the pool. 
+
+$$
+\text{Maintain } (x - \Delta x)(y + \Phi \Delta y) = k
+$$
+
+$$
+\Delta y = \frac{1}{\Phi} \frac{y \Delta x}{x - \Delta x}
+$$
+
+The fee from each trade is distributed among LPs in proportion to their `share` of the pool - that is, the portion of the total values that their assets correspond to.
+
+#### 2.2 Traders
+While LPs see the pools as long term investments, traders are more interested in short term profit. AMM make *great* arbitrage opportunities, as the price is determined by the pool's state, and not by the market. By taking advantage of price differences between markets, traders can make a profit, at the LPs' loss.
+
+Naturally, this moves the exchange rate of the liquidity pool towards the market price. This is known as "Automated price discovery".
+
+But for traders, one more thing comes to mind, "Slippage"
+
+### 3. Slippage
+
+Slippage is a significant problem in decentralized exchanges (DEXs) that can occur due to the decentralized nature of these platforms. Slippage refers to the difference between the expected price of a trade and the actual executed price. The larger the trade, the worst  the price becomes.
+
+![slippage](./res/slippage.png) 
+
+Consider that $\Delta y = \frac{1}{\Phi} \frac{y \Delta x}{x - \Delta x}$, this means that the pool will never run out of liquidity, since as $\Delta x\$ approaches x, the price for it approaches $\inf$
