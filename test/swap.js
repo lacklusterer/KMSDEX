@@ -39,9 +39,52 @@ describe("TokenExchange", function () {
 		eth_reserves = ethers.utils.parseUnits("5000", "ether");
 		await exchange.createPool(token_reserves, { value: eth_reserves });
 
+		// Mapped to BigNumber for calculations
 		[bigETHReserves, bigTokenReserves] = [eth_reserves, token_reserves].map(
-			ethers.BigNumber.from
+			ethers.BigNumber.from,
 		);
+		// printLiquidity(exchange);
+	});
+
+	describe("Liquidity functionalities", function () {
+		it("Should create liquidity pool with correct reserves", async function () {
+			const [currentTokenReserves, currentETHReserves] =
+				await exchange.getReserves();
+			expect(currentTokenReserves).to.equal(token_reserves);
+			expect(currentETHReserves).to.equal(eth_reserves);
+		});
+
+		it("Should return the correct reserves", async function () {
+			const [currentTokenReserves, currentETHReserves] =
+				await exchange.getReserves();
+			expect(currentTokenReserves).to.equal(
+				await token.balanceOf(exchange.address),
+			);
+			expect(currentETHReserves).to.equal(
+				await hre.ethers.provider.getBalance(exchange.address),
+			);
+		});
+
+		it("Should add the correct amount of liquidity", async function () {
+			const ethAmount = ethers.utils.parseEther("1.5");
+			const tokenAmount = ethToToken(
+				ethAmount,
+				bigETHReserves,
+				bigTokenReserves,
+			);
+			await token.mint(tokenAmount);
+			await token.approve(exchange.address, tokenAmount);
+			await exchange.addLiquidity({ value: ethAmount });
+
+			expect(bigTokenReserves.add(tokenAmount)).to.equal(
+				await token.balanceOf(exchange.address),
+			);
+
+			const ethrAfter = bigETHReserves.add(ethAmount);
+			expect(ethrAfter).to.equal(
+				await hre.ethers.provider.getBalance(exchange.address),
+			);
+		});
 	});
 
 	describe("Swap Tokens for ETH - Normal", function () {
@@ -51,12 +94,12 @@ describe("TokenExchange", function () {
 			await giveTokens(addr1, tokenAmount);
 
 			const max_slippage = ethers.BigNumber.from(
-				ethers.utils.parseUnits("0.1", 3)
+				ethers.utils.parseUnits("0.1", 3),
 			);
 			// Max slippage = 1%
 
 			const balanceBeforeTrade = await hre.ethers.provider.getBalance(
-				addr1.address
+				addr1.address,
 			);
 			const tx = await exchange
 				.connect(addr1)
@@ -71,12 +114,12 @@ describe("TokenExchange", function () {
 			const expectedETH = getAmountOut(
 				bigTokenReserves,
 				bigETHReserves,
-				tokenAmount
+				tokenAmount,
 			);
 			// console.log("Expected ETH: " + ethers.utils.formatEther(expectedETH));
 			//
 			const balanceAfterTrade = await hre.ethers.provider.getBalance(
-				addr1.address
+				addr1.address,
 			);
 
 			// console.log(
@@ -86,7 +129,7 @@ describe("TokenExchange", function () {
 			// 	"Balance after trade: " + ethers.utils.formatEther(balanceAfterTrade)
 			// );
 			expect(balanceBeforeTrade.sub(gasFee).add(expectedETH)).to.equal(
-				balanceAfterTrade
+				balanceAfterTrade,
 			);
 		});
 
@@ -98,17 +141,17 @@ describe("TokenExchange", function () {
 			const ethAmount = getAmountOut(
 				bigTokenReserves,
 				bigETHReserves,
-				tokenAmount
+				tokenAmount,
 			);
 			const slippage = calculateSlippage(
 				bigTokenReserves,
 				bigETHReserves,
 				tokenAmount,
-				ethAmount
+				ethAmount,
 			);
 
 			const max_slippage = ethers.BigNumber.from(
-				ethers.utils.parseUnits("0.038", 3)
+				ethers.utils.parseUnits("0.038", 3),
 			);
 
 			const tx = exchange
@@ -123,7 +166,7 @@ describe("TokenExchange", function () {
 			const tokenAmount = ethers.utils.parseUnits("1", 18);
 
 			const max_slippage = ethers.BigNumber.from(
-				ethers.utils.parseUnits("2", 23)
+				ethers.utils.parseUnits("2", 23),
 			);
 
 			const tx = exchange
@@ -141,11 +184,11 @@ describe("TokenExchange", function () {
 			await giveTokens(addr1, tokenAmount);
 
 			const max_slippage = ethers.BigNumber.from(
-				ethers.utils.parseUnits("-1", 23)
+				ethers.utils.parseUnits("-1", 23),
 			);
 
 			await expect(
-				exchange.connect(addr1).swapTokensForETH(tokenAmount, max_slippage)
+				exchange.connect(addr1).swapTokensForETH(tokenAmount, max_slippage),
 			).to.be.rejectedWith(Error);
 		});
 	});
@@ -154,7 +197,7 @@ describe("TokenExchange", function () {
 		it("Should swap ETH for tokens with correct exchange rate", async function () {
 			const ethIn = ethers.utils.parseUnits("1", 18);
 			const max_slippage = ethers.BigNumber.from(
-				ethers.utils.parseUnits("2", 23)
+				ethers.utils.parseUnits("2", 23),
 			);
 
 			const tokensBeforeTrade = await token.balanceOf(addr1.address);
@@ -171,7 +214,7 @@ describe("TokenExchange", function () {
 			const expectedAmountTokens = getAmountOut(
 				bigETHReserves,
 				bigTokenReserves,
-				ethIn
+				ethIn,
 			);
 			// console.log(
 			// 	"Expected tokens to receive: " +
@@ -183,14 +226,14 @@ describe("TokenExchange", function () {
 
 		it("Should revert if amount ETH sent is 0", async function () {
 			await expect(
-				exchange.connect(addr1).swapETHForTokens(0, { value: 0 })
+				exchange.connect(addr1).swapETHForTokens(0, { value: 0 }),
 			).to.be.revertedWith("Please swap more than 0 ETH");
 		});
 
 		it("Should revert if slippage too large", async function () {
 			const ethIn = ethers.utils.parseUnits("1", 18);
 			const max_slippage = ethers.BigNumber.from(
-				ethers.utils.parseUnits("0.038", 3)
+				ethers.utils.parseUnits("0.038", 3),
 			);
 
 			const numerator = multiplier.mul(ethIn.add(bigETHReserves));
@@ -200,12 +243,13 @@ describe("TokenExchange", function () {
 			await expect(
 				exchange.connect(addr1).swapETHForTokens(max_slippage, {
 					value: ethIn,
-				})
+				}),
 			).to.be.revertedWith("Slippage too large");
 		});
 	});
 });
 
+/*---------------------- Helper functions ----------------------*/
 async function giveTokens(addr, amount) {
 	await token.mint(amount);
 	await token.approve(addr.address, amount);
@@ -221,9 +265,10 @@ function getAmountOut(reserveIn, reserveOut, amountIn) {
 		.div(reserveIn.add(amountIn).mul(swap_fee_denominator));
 }
 
-async function printLiquidity(exchange) {
-	console.log(ethers.utils.formatUnits(bigTokenReserves, 18) + " KMS");
-	console.log(ethers.utils.formatEther(bigETHReserves) + " ETH");
+async function getLiquidity(exchange) {
+	const [currentTokenReserves, currentETHReserves] =
+		await exchange.getReserves();
+	return [currentTokenReserves, currentETHReserves];
 }
 
 async function sendETH(from, to, amount) {
@@ -260,4 +305,8 @@ function calculateSlippage(_reserveIn, _reserveOut, _amountIn, _amountOut) {
 	// console.log(ethers.utils.parseUnits("0.039", 3));
 	//
 	return slippage;
+}
+
+function ethToToken(_amountETH, er, tr) {
+	return _amountETH.mul(tr.div(er));
 }
