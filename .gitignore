@@ -1,10 +1,5 @@
 .env
-/node_modules
-/package-lock.json
+node_modules
 artifacts/
 cache/
-zk_app/artifacts
-zk_app/peggy/
-zk_app/victor/
-zk_app/proof.json
-scripts/exe.js
+zk_app/
