@@ -1,18 +1,16 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: WTFPL
 pragma solidity ^0.8.0;
 
 import "./token.sol";
 import "hardhat/console.sol";
 import "./verifier.sol";
 import "./interfaces/IVerifier.sol";
+import "./exchangehelper.sol";
 
-contract TokenExchange is Ownable {
+contract TokenExchange is Ownable, ExchangeHelper {
     string public exchange_name = "KMS EX";
-
     address tokenAddr = 0x5FbDB2315678afecb367f032d93F642f64180aa3; // WARNING: update after deploying token
     Token public token = Token(tokenAddr);
-
-	address verifierAddr = 0x5FbDB2315678afecb367f032d93F642f64180aa3; // WARNING: update after deploying verifier
 
     // Liquidity pool for the exchange
     uint private token_reserves = 0;
@@ -24,21 +22,14 @@ contract TokenExchange is Ownable {
 
     // Liquidity pool shares
     mapping(address => uint) private lps;
-
     // For Extra Credit only: to loop through the keys of the lps mapping
     address[] private lp_providers;
 
     // Total Pool Shares
     uint private total_shares = 0;
 
-    // liquidity rewards
-    uint private swap_fee_numerator = 3;
-    uint private swap_fee_denominator = 100;
-
     // Constant: x * y = k
     uint private k;
-
-    uint private multiplier = 10 ** 5;
 
     constructor() {}
 
@@ -82,11 +73,6 @@ contract TokenExchange is Ownable {
         lp_providers.pop();
     }
 
-    // Function getSwapFee: Returns the current swap fee ratio to the client.
-    function getSwapFee() public view returns (uint, uint) {
-        return (swap_fee_numerator, swap_fee_denominator);
-    }
-
     // Function getReserves
     function getReserves() public view returns (uint, uint) {
         return (eth_reserves, token_reserves);
@@ -102,8 +88,8 @@ contract TokenExchange is Ownable {
 
     function ethToToken(
         uint _amountETH
-    ) internal view poolExist returns (uint) {
-        return _amountETH * (token_reserves / eth_reserves);
+    ) internal view poolExist returns (uint amountToken) {
+        amountToken = _amountETH * (token_reserves / eth_reserves);
     }
 
     // Function addLiquidity: Adds liquidity based on ETH in msg.value
@@ -111,7 +97,8 @@ contract TokenExchange is Ownable {
         require(msg.value > 0, "Need to ETH to add liquidity");
 
         uint tokenAmount = ethToToken(msg.value);
-        require(tokenAmount <= token.balanceOf(msg.sender), "Not enough token");
+        uint tokenSupply = token.balanceOf(msg.sender);
+        require(tokenAmount <= tokenSupply, "Not enough token");
 
         token_reserves += tokenAmount;
         eth_reserves += msg.value;
@@ -146,7 +133,7 @@ contract TokenExchange is Ownable {
         token_reserves -= amountToken;
         k = eth_reserves * token_reserves;
 
-        token.transferFrom(address(this), msg.sender, amountToken);
+        token.transfer(msg.sender, amountToken);
         payable(msg.sender).transfer(amountETH);
 
         total_shares -= sharesRemove;
@@ -160,7 +147,7 @@ contract TokenExchange is Ownable {
         uint tokenAmount = ethToToken(ethAmount);
 
         payable(msg.sender).transfer(ethAmount);
-        token.transferFrom(address(this), msg.sender, tokenAmount);
+        token.transfer(msg.sender, tokenAmount);
 
         eth_reserves -= ethAmount;
         token_reserves -= tokenAmount;
@@ -186,9 +173,9 @@ contract TokenExchange is Ownable {
         );
 
         uint amountETH = getAmountOut(
-            amountTokens,
             token_reserves,
-            eth_reserves
+            eth_reserves,
+            amountTokens
         );
 
         require(amountETH <= eth_reserves - 1, "Not enough ETH in reserve");
@@ -200,7 +187,8 @@ contract TokenExchange is Ownable {
                 amountTokens,
                 amountETH,
                 maxSlippage
-            )
+            ),
+            "Slippage too large"
         );
 
         token.transferFrom(msg.sender, address(this), amountTokens);
@@ -212,46 +200,13 @@ contract TokenExchange is Ownable {
 
     // Function swapETHForTokens: Swaps ETH for your tokens
     function swapETHForTokens(uint maxSlippage) external payable poolExist {
-        uint amountTokens = _ethIn(maxSlippage, msg.value);
-        token.transferFrom(address(this), msg.sender, amountTokens);
-    }
+        require(msg.value > 0, "Please swap more than 0 ETH");
 
-    // Function getAmountOut: for 2 reserves and 1 asset, outputs the equivalent amount to swap
-    function getAmountOut(
-        uint _reserveIn,
-        uint _reserveOut,
-        uint _amountIn
-    ) internal view returns (uint amountOut) {
-        uint amountInDeducted = (multiplier * _amountIn * swap_fee_numerator) /
-            swap_fee_denominator;
-        uint outNumberator = _reserveOut * amountInDeducted;
-        uint outDenominator = _reserveIn * multiplier + amountInDeducted;
-
-        amountOut = outNumberator / outDenominator;
-    }
-
-    // Function checkSlippage: return a boolean: exchange rate slippage is acceptable or not
-    function checkSlippage(
-        uint _reserveIn,
-        uint _reserveOut,
-        uint _amountIn,
-        uint _amountOut,
-        uint _maxSlippage
-	) internal view returns (bool accept) {
-        uint currentRate = (_reserveIn * multiplier) / _reserveOut;
-        uint afterTradeRate = ((_reserveIn + _amountIn) * multiplier) /
-            (_reserveOut - _amountOut);
-        uint slippage = ((afterTradeRate - currentRate) * 100) / currentRate;
-        accept = (slippage <= _maxSlippage);
-    }
-
-    function _ethIn(
-        uint maxSlippage,
-        uint amountETH
-    ) internal poolExist returns (uint amountTokens) {
-        require(amountETH > 0, "Please swap more than 0 ETH");
-
-        amountTokens = getAmountOut(eth_reserves, token_reserves, amountETH);
+        uint amountTokens = getAmountOut(
+            eth_reserves,
+            token_reserves,
+            msg.value
+        );
 
         require(
             amountTokens <= token_reserves - 1,
@@ -262,42 +217,15 @@ contract TokenExchange is Ownable {
             checkSlippage(
                 eth_reserves,
                 token_reserves,
-                amountETH,
+                msg.value,
                 amountTokens,
                 maxSlippage
-            )
+            ),
+            "Slippage too large"
         );
 
-        eth_reserves += amountETH;
-		token_reserves -= amountTokens;
-	}
-
-	/* ========================= ZK Functions =========================  */
-	// WARNING: UNTESTED
-
-	mapping(bytes32 => uint) private zkBalances;
-
-	// This function is similar to the normal swap function, but does not pay tokens immediately
-	// instead, the amount of tokens is mapped to the user provided sha256 digest. Using zk-snark
-	// proof to prove the knowledge of the pre-image of the digest, the user can withdraw	
-	function zkSwapETHForTokens(
-		uint maxSlippage,
-		bytes32 zkKey
-	) external payable poolExist {
-		uint amountTokens = _ethIn(maxSlippage, msg.value);
-		zkBalances[zkKey] = amountTokens;
-	}
-
-	IVerifier verifier = IVerifier(verifierAddr);
-
-	function zkWithdraw(
-		IVerifier.Proof memory proof,
-		uint[2] memory input,
-		bytes32 zkKey
-	) external poolExist {
-		bool verificationResult = verifier.verifyTx(proof, input);
-		require(verificationResult, "Verification failed");
-
-		token.transferFrom(address(this), msg.sender, zkBalances[zkKey]);
-	}
+        token.transfer(msg.sender, amountTokens);
+        eth_reserves += msg.value;
+        token_reserves -= amountTokens;
+    }
 }

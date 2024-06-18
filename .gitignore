@@ -1,5 +1,10 @@
 .env
-node_modules
+
+node_modules/
 artifacts/
 cache/
 zk_app/
+web_app/
+web_app_2/
+test/ref/
+scripts/.ignore/
