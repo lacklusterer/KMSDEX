@@ -3,8 +3,6 @@ pragma solidity ^0.8.0;
 
 import "./token.sol";
 import "hardhat/console.sol";
-import "./verifier.sol";
-import "./interfaces/IVerifier.sol";
 import "./exchangehelper.sol";
 
 contract TokenExchange is Ownable, ExchangeHelper {
@@ -60,17 +58,6 @@ contract TokenExchange is Ownable, ExchangeHelper {
         total_shares = 10 ** 5;
         // Pool creator has some low amount of shares to allow autograder to run
         lps[msg.sender] = 100;
-    }
-
-    // Function removeLP: removes a liquidity provider from the list.
-    // This function also removes the gap left over from simply running "delete".
-    function removeLP(uint index) private {
-        require(
-            index < lp_providers.length,
-            "specified index is larger than the number of lps"
-        );
-        lp_providers[index] = lp_providers[lp_providers.length - 1];
-        lp_providers.pop();
     }
 
     // Function getReserves
@@ -141,7 +128,6 @@ contract TokenExchange is Ownable, ExchangeHelper {
     }
 
     // Function removeAllLiquidity: Removes all liquidity that msg.sender is entitled to withdraw
-    // You can change the inputs, or the scope of your function, as needed.
     function removeAllLiquidity() external payable poolExist {
         uint ethAmount = eth_reserves * (lps[msg.sender] / total_shares);
         uint tokenAmount = ethToToken(ethAmount);
@@ -156,8 +142,6 @@ contract TokenExchange is Ownable, ExchangeHelper {
         total_shares -= lps[msg.sender];
         lps[msg.sender] = 0;
     }
-
-    /*** TODO:  Define additional functions for liquidity fees ***/
 
     /* ========================= Swap Functions =========================  */
 
