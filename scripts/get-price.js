@@ -12,8 +12,10 @@ async function main() {
 	oracle = oracleFactory.attach(oracleAddress);
 
 	const price = await oracle.getPrice();
-
-	console.log("Current price: ", ethers.formatUnits(price, 5), " what");
+	console.log(
+		"Current price of token in ETH: ",
+		ethers.utils.formatUnits(price, 18)
+	);
 }
 
 main()

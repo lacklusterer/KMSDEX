@@ -12,13 +12,13 @@ contract PriceOracle {
 		exchange = IExchange(_exchangeAddress);
 	}
 
-	function getPrice() external view returns (uint) {
+	function getPrice() external view returns (uint price) {
 		(uint ethReserves, uint tokenReserves) = exchange.getReserves();
-		return (ethReserves / tokenReserves) * (10 ** 5);
+		price = ((ethReserves * (10 ** 18)) / tokenReserves);
 	}
 
 	function getInversePrice() external view returns (uint) {
 		(uint ethReserves, uint tokenReserves) = exchange.getReserves();
-		return (tokenReserves / ethReserves) * (10 ** 5);
+		return ((tokenReserves * (10 ** 18)) / ethReserves);
 	}
 }
